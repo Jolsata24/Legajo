@@ -2,142 +2,102 @@
 session_start();
 require '../php/db.php';
 
-// Roles permitidos
+// Seguridad
 $roles_permitidos = ['admin','rrhh','jefe_area','secretaria'];
 if (!isset($_SESSION['id']) || !in_array($_SESSION['rol'], $roles_permitidos)) {
     header("Location: ../into/login.html");
     exit;
 }
 
-// Mensaje de sesión (si existe)
-$mensaje = $_SESSION['mensaje'] ?? null;
-unset($_SESSION['mensaje']);
-
-// Validar area_id en GET
-if (!isset($_GET['area_id'])) {
-    die("⚠️ No se especificó el área.");
-}
-$area_id = (int) $_GET['area_id'];
-
-// Si el usuario es jefe_area, comprobar que su área coincide (intentar desde sesión o DB)
-if ($_SESSION['rol'] === 'jefe_area') {
-    // Intentamos usar id_area desde sesión si existe
-    $mi_area = $_SESSION['id_area'] ?? null;
-    if (!$mi_area) {
-        // consultamos en BD
-        $stmtA = $pdo->prepare("SELECT id_area FROM usuarios WHERE id = ?");
-        $stmtA->execute([$_SESSION['id']]);
-        $rowA = $stmtA->fetch();
-        $mi_area = $rowA['id_area'] ?? null;
-    }
-    if ((int)$mi_area !== $area_id) {
-        die("Acceso denegado: no puedes ver documentos de otra área.");
-    }
-}
+$area_id = isset($_GET['area_id']) ? (int)$_GET['area_id'] : 0;
+if ($area_id <= 0) die("Área no válida.");
 
 try {
-    // Nombre del área
-    $stmt = $pdo->prepare("SELECT nombre FROM areas WHERE id = ?");
-    $stmt->execute([$area_id]);
-    $area = $stmt->fetch();
+    // Datos del área y sus documentos
+    $stmt_area = $pdo->prepare("SELECT nombre FROM areas WHERE id = ?");
+    $stmt_area->execute([$area_id]);
+    $area = $stmt_area->fetch();
     if (!$area) die("Área no encontrada.");
 
-    // Traer documentos asignados a esa área
-    $stmt = $pdo->prepare("
-        SELECT d.id, d.nombre_original, d.nombre_guardado, d.tipo, d.fecha_subida, d.estado, d.feedback,
-               u.nombre AS empleado, u.email, d.revisado_por, d.fecha_revision
-        FROM documentos d
-        INNER JOIN usuarios u ON d.id_usuario = u.id
-        WHERE d.id_area_destino = ?
-        ORDER BY d.fecha_subida DESC
-    ");
-    $stmt->execute([$area_id]);
-    $documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_docs = $pdo->prepare(
+        "SELECT d.id, d.nombre_original, d.nombre_guardado, d.estado, d.feedback, u.nombre AS empleado
+         FROM documentos d
+         JOIN usuarios u ON d.id_usuario = u.id
+         WHERE d.id_area_destino = ?
+         ORDER BY d.fecha_subida DESC"
+    );
+    $stmt_docs->execute([$area_id]);
+    $documentos = $stmt_docs->fetchAll();
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
+
+$page_title = "Documentos de " . $area['nombre'];
+require_once '../includes/header_secretaria.php';
+require_once '../includes/sidebar_secretaria.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Documentos del Área <?= htmlspecialchars($area['nombre']) ?></title>
-  <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-    textarea { width: 100%; min-height:60px; }
-    .msg { padding:10px; margin-bottom:10px; border-radius:6px; }
-    .msg-ok { background:#e6ffed; color:#165d33; }
-    .msg-err { background:#ffe6e6; color:#8a1c1c; }
-    .btn { padding:6px 10px; border-radius:6px; cursor:pointer; }
-  </style>
-</head>
-<body>
-  <h1>📂 Documentos del área: <?= htmlspecialchars($area['nombre']) ?></h1>
-  <p><a href="secretaria_dashboard.php">⬅ Volver al Dashboard</a></p>
+<style>
+    .styled-table { width: 100%; border-collapse: collapse; }
+    .styled-table th, .styled-table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+    .styled-table th { background-color: #f2f2f2; }
+    .styled-table select, .styled-table textarea, .styled-table button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 100%; }
+    .styled-table button { cursor: pointer; background-color: #28a745; color: white; border-color: #28a745; }
+</style>
 
-  <?php if($mensaje): ?>
-    <div class="msg <?= strpos($mensaje,'✅')===0 ? 'msg-ok' : 'msg-err' ?>">
-      <?= htmlspecialchars($mensaje) ?>
-    </div>
-  <?php endif; ?>
+<div class="main">
+    <header class="topbar">
+        <h1><i class="fas fa-folder-open"></i> Documentos del Área: <?= htmlspecialchars($area['nombre']) ?></h1>
+    </header>
 
-  <?php if (!empty($documentos)): ?>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Empleado</th>
-          <th>Documento</th>
-          <th>Fecha subida</th>
-          <th>Estado</th>
-          <th>Feedback</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php foreach ($documentos as $doc): ?>
-        <tr>
-          <td><?= $doc['id'] ?></td>
-          <td><?= htmlspecialchars($doc['empleado']) ?><br><small><?= htmlspecialchars($doc['email']) ?></small></td>
-          <td>
-            <?= htmlspecialchars($doc['nombre_original']) ?><br>
-            <a href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank">📥 Descargar</a>
-          </td>
-          <td><?= $doc['fecha_subida'] ?></td>
+    <main class="content">
+        <a href="secretaria_dashboard.php" class="btn-back" style="text-decoration:none; color: white; background: #333; padding: 10px; border-radius: 5px; display: inline-block; margin-bottom: 20px;">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+        </a>
 
-          <td>
-            <!-- Formulario pequeño para cambiar estado + feedback -->
-            <form action="actualiza estado.php" method="post" style="margin:0;">
-              <input type="hidden" name="id_doc" value="<?= $doc['id'] ?>">
-              <input type="hidden" name="area_id" value="<?= $area_id ?>">
-              <select name="estado" required>
-                <option value="pendiente" <?= $doc['estado']=='pendiente' ? 'selected' : '' ?>>Pendiente</option>
-                <option value="observado" <?= $doc['estado']=='observado' ? 'selected' : '' ?>>Observado</option>
-                <option value="rechazado" <?= $doc['estado']=='rechazado' ? 'selected' : '' ?>>Rechazado</option>
-                <option value="revisado" <?= $doc['estado']=='revisado' ? 'selected' : '' ?>>Revisado</option>
-              </select>
-          </td>
+        <div class="card">
+            <?php if (empty($documentos)): ?>
+                <p>No hay documentos asignados a esta área.</p>
+            <?php else: ?>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Enviado por</th>
+                            <th>Estado y Feedback</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($documentos as $doc): ?>
+                        <tr>
+                            <td>
+                                <?= htmlspecialchars($doc['nombre_original']) ?><br>
+                                <a href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank">Descargar</a>
+                            </td>
+                            <td><?= htmlspecialchars($doc['empleado']) ?></td>
+                            <td>
+                                <form action="actualiza_estado.php" method="post">
+                                    <input type="hidden" name="id_doc" value="<?= $doc['id'] ?>">
+                                    <input type="hidden" name="area_id" value="<?= $area_id ?>">
+                                    <select name="estado" required>
+                                        <option value="pendiente" <?= $doc['estado']=='pendiente' ? 'selected' : '' ?>>Pendiente</option>
+                                        <option value="observado" <?= $doc['estado']=='observado' ? 'selected' : '' ?>>Observado</option>
+                                        <option value="rechazado" <?= $doc['estado']=='rechazado' ? 'selected' : '' ?>>Rechazado</option>
+                                        <option value="revisado" <?= $doc['estado']=='revisado' ? 'selected' : '' ?>>Revisado</option>
+                                    </select>
+                                    <textarea name="feedback" placeholder="Escribir feedback..."><?= htmlspecialchars($doc['feedback']) ?></textarea>
+                            </td>
+                            <td>
+                                    <button type="submit">💾 Guardar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </main>
+</div>
 
-          <td>
-              <textarea name="feedback" placeholder="Escribir feedback..."><?= htmlspecialchars($doc['feedback']) ?></textarea>
-              <?php if (!empty($doc['revisado_por'])): ?>
-                <div style="font-size:12px;color:#666;margin-top:6px;">
-                  Revisado por ID: <?= htmlspecialchars($doc['revisado_por']) ?> el <?= htmlspecialchars($doc['fecha_revision'] ?? '') ?>
-                </div>
-              <?php endif; ?>
-          </td>
-
-          <td style="vertical-align:top;">
-              <button class="btn" type="submit">💾 Guardar</button>
-              </form>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  <?php else: ?>
-    <p>No hay documentos asignados a esta área.</p>
-  <?php endif; ?>
-</body>
-</html>
+<?php require_once '../includes/footer.php'; ?>

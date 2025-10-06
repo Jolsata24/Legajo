@@ -60,6 +60,14 @@ require_once '../includes/sidebar_empleado.php';
                                 <td>
                                     <a href="ver_documento_enviado.php?id=<?= $doc['id'] ?>" class="btn-download">Ver Detalles</a>
                                 </td>
+                                <td style="display: flex; gap: 10px;">
+    <a href="../php/ver_documento.php?id=<?= $doc['id'] ?>&action=view" target="_blank" class="btn-view">
+        <i class="fas fa-eye"></i> Ver
+    </a>
+    <a href="../php/ver_documento.php?id=<?= $doc['id'] ?>&action=download" class="btn-download">
+        <i class="fas fa-download"></i> Descargar
+    </a>
+</td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
