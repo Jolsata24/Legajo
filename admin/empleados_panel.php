@@ -29,7 +29,7 @@ require_once '../includes/header_admin.php';
 require_once '../includes/sidebar_admin.php';
 ?>
 
-<link rel="stylesheet" href="../style/empleados.css">
+<link rel="stylesheet" href="../style/main.css">
 
 <div class="main">
     <header class="topbar">
@@ -49,7 +49,7 @@ require_once '../includes/sidebar_admin.php';
                       </div>
                       <div class="card-body">
                         <h3><?= htmlspecialchars($emp['nombre']); ?></h3>
-                        <p><?= htmlspecialchars($emp['email']); ?></p>
+                        <p style="font-size: 15px;"><?= htmlspecialchars($emp['email']); ?></p>
                       </div>
                       <div class="card-footer">
                         <a class="btn-view" href="../panel_de_jefe/ver_empleado.php?id=<?= $emp['id']; ?>">

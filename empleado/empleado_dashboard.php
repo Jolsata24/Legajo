@@ -7,95 +7,66 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     exit;
 }
 
-// --- ¡NUEVO! CÓDIGO PARA OBTENER LAS ÁREAS Y NOTIFICACIONES ---
-$id_usuario = $_SESSION['id'];
+$id_usuario = (int)$_SESSION['id'];
 $notificaciones = [];
 $num_no_leidas = 0;
-$areas = [];
+$metricas = ['en_proceso' => 0, 'aprobados' => 0, 'con_observaciones' => 0];
+$actividad_reciente = [];
 
 try {
-    // 1. Obtener notificaciones (código que ya tenías)
-    $stmt_notif = $pdo->prepare("SELECT id, mensaje, leido, enlace FROM notificaciones WHERE id_usuario_destino = ? ORDER BY fecha_creacion DESC LIMIT 10");
+    // ... (Tu código PHP para obtener notificaciones, métricas y actividad reciente se mantiene igual) ...
+    $stmt_notif = $pdo->prepare("SELECT id, mensaje, leido, enlace, fecha_creacion FROM notificaciones WHERE id_usuario_destino = ? ORDER BY fecha_creacion DESC LIMIT 5");
     $stmt_notif->execute([$id_usuario]);
     $notificaciones = $stmt_notif->fetchAll();
     $num_no_leidas = count(array_filter($notificaciones, fn($n) => !$n['leido']));
+    $stmt_metricas = $pdo->prepare("SELECT estado, COUNT(*) as total FROM documentos WHERE id_usuario = ? AND id_area_destino IS NOT NULL GROUP BY estado");
+    $stmt_metricas->execute([$id_usuario]);
+    foreach ($stmt_metricas->fetchAll() as $row) {
+        if (in_array($row['estado'], ['pendiente', 'observado'])) { $metricas['en_proceso'] += $row['total']; }
+        if ($row['estado'] === 'revisado') { $metricas['aprobados'] = $row['total']; }
+        if ($row['estado'] === 'rechazado') { $metricas['con_observaciones'] = $row['total']; }
+    }
+    $stmt_historial = $pdo->prepare("SELECT h.descripcion, h.fecha, d.nombre_original FROM documentos_historial h JOIN documentos d ON h.id_documento = d.id WHERE d.id_usuario = ? ORDER BY h.fecha DESC LIMIT 3");
+    $stmt_historial->execute([$id_usuario]);
+    $actividad_reciente = $stmt_historial->fetchAll();
 
-    // 2. Obtener todas las áreas que tienen al menos un documento
-    $areas = $pdo->query(
-        "SELECT DISTINCT a.id, a.nombre 
-         FROM areas a
-         JOIN documentos d ON a.id = d.id_area_destino
-         ORDER BY a.nombre ASC"
-    )->fetchAll();
-
-} catch (PDOException $e) {
-    // Manejar error
-}
-// --- FIN DEL CÓDIGO NUEVO ---
+} catch (PDOException $e) { /*...*/ }
 
 $page_title = "Dashboard - " . $_SESSION['nombre'];
 require_once '../includes/header_empleado.php';
 require_once '../includes/sidebar_empleado.php';
 ?>
 <style>
-    /* ... tus estilos de notificaciones ... */
-    .card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-    .area-card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-        transition: transform 0.2s, box-shadow 0.2s;
-        text-decoration: none;
-        color: #333;
-    }
-    .area-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 14px rgba(0,0,0,0.1);
-    }
-    .area-card .icon { font-size: 40px; color: #007bff; margin-bottom: 15px; }
-    .area-card h3 { margin: 0; font-size: 18px; }
+    /* ... (Tus estilos necesarios) ... */
 </style>
 
 <div class="main">
     <header class="topbar">
-      <h1><i class="fas fa-home"></i> Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?></h1>
+      <h1><i class="fas fa-home"></i> Inicio</h1>
       <div class="top-actions">
-        <div class="notifications">
-            </div>
-        <span style="margin-left: 20px;"><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
-      </div>
+          </div>
     </header>
 
     <main class="content">
-        <div class="card">
-            <h3><i class="fas fa-sitemap"></i> Explorador de Documentos por Área</h3>
-            <p>Selecciona un área para ver los documentos que han sido asignados a ella.</p>
-
-            <div class="card-grid">
-                <?php if (empty($areas)): ?>
-                    <p>Aún no hay documentos públicos en ninguna área.</p>
-                <?php else: ?>
-                    <?php foreach ($areas as $area): ?>
-                        <a href="ver_area_documentos.php?id=<?= $area['id'] ?>" class="area-card">
-                            <div class="icon"><i class="fas fa-folder"></i></div>
-                            <h3><?= htmlspecialchars($area['nombre']) ?></h3>
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+        <div class="cards">
+            <div class="card"><h3>En Proceso</h3><p><?= $metricas['en_proceso'] ?></p></div>
+            <div class="card"><h3>Aprobados</h3><p style="color: #198754;"><?= $metricas['aprobados'] ?></p></div>
+            <div class="card"><h3>Con Observaciones</h3><p style="color: #dc3545;"><?= $metricas['con_observaciones'] ?></p></div>
         </div>
-        </main>
+
+        <div class="card">
+            <h3>Acciones Rápidas</h3>
+            <a href="enviar_documento.php" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Enviar Nuevo Documento</a>
+            <a href="documentos_enviados.php" class="btn btn-info"><i class="fas fa-history"></i> Ver Todos Mis Envíos</a>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-history"></i> Actividad Reciente en mis Documentos</h3>
+          </div>
+    </main>
 </div>
 
 <script>
-    // ... tu script de toggleNotifications ...
+    // ... tu script de notificaciones ...
 </script>
-
 <?php require_once '../includes/footer.php'; ?>

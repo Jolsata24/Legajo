@@ -14,7 +14,7 @@
         </p>
 
         <?php if (!empty($_GET['msg'])): ?>
-            <div style="padding: 10px; ...">
+            <div style="padding: 10px;">
                 <?= htmlspecialchars(urldecode($_GET['msg'])); ?>
             </div>
         <?php endif; ?>
