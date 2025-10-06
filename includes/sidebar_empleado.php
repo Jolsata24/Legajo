@@ -29,8 +29,9 @@ if (!empty($_SESSION['foto'])) {
   <a href="empleado_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
   <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
   <a href="enviar_documento.php"><i class="fas fa-paper-plane"></i> Enviar Documento</a>
-  
   <a href="documentos_enviados.php"><i class="fas fa-history"></i> Mis Envíos</a>
+  
+  <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
   
   <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
 </nav>
