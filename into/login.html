@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login - Sistema de Legajo | DREMH PASCO</title>
+
+  <!-- Fuente (opcional) -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style/login.css">
+
+</head>
+<body>
+  <main class="login-wrapper" role="main">
+    <section class="card" aria-labelledby="login-title">
+      <div class="brand" aria-hidden="false">
+        <img src="../img/dremhlogo.png" alt="Logo DREMH Pasco">
+        <div>
+          <h1>DREMH Pasco</h1>
+          <small>Sistema de Legajo</small>
+        </div>
+      </div>
+
+      <h2 id="login-title">Iniciar sesión</h2>
+
+      <!-- Formulario corregido: etiquetas ligadas con 'for' y 'id', autocomplete y aria -->
+      <form action="../php/login.php" method="POST" class="login-form" aria-label="Formulario de inicio de sesión">
+        <div class="form-group">
+          <label for="usuario">Usuario</label>
+          <input
+            id="usuario"
+            name="usuario"
+            type="text"
+            autocomplete="username"
+            placeholder="Tu usuario"
+            required
+            inputmode="text"
+          />
+        </div>
+
+        <div class="form-group password-group">
+          <label for="clave">Contraseña</label>
+          <input
+            id="clave"
+            name="clave"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            required
+            minlength="4"
+          />
+          <button type="button" class="toggle-password" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button>
+        </div>
+
+        <div class="form-group">
+          <button type="submit" class="btn-submit">Ingresar</button>
+        </div>
+
+        <div class="form-footer">
+          <a href="#" tabindex="0">¿Olvidaste tu contraseña?</a>
+          <a href="#" tabindex="0">Soporte</a>
+        </div>
+
+        <p class="copyright">© <span id="year"></span> DREMH Pasco</p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // Toggle mostrar/ocultar contraseña (UI amigable)
+    (function () {
+      const toggle = document.querySelector('.toggle-password');
+      const pwd = document.getElementById('clave');
+      const yearEl = document.getElementById('year');
+      if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+      if (!toggle || !pwd) return;
+      toggle.addEventListener('click', () => {
+        const isPassword = pwd.type === 'password';
+        pwd.type = isPassword ? 'text' : 'password';
+        toggle.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+        toggle.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+      });
+    })();
+  </script>
+</body>
+</html>
