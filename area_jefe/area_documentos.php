@@ -2,68 +2,74 @@
 session_start();
 require '../php/db.php';
 
-// Solo RRHH o Admin pueden ver esto
-if (!isset($_SESSION['id']) || !in_array($_SESSION['rol'], ['rrhh', 'admin', 'jefe_area'])) {
-    header("Location: login.html");
+if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'jefe_area') {
+    header("Location: ../into/login.html");
     exit;
 }
 
+$id_area_jefe = $_SESSION['id_area'] ?? 0;
+
 try {
-    // Traer todos los documentos con info del empleado
-    $stmt = $pdo->query("
-        SELECT d.id, d.nombre_original, d.nombre_guardado, d.tipo, d.fecha_subida,
-               u.nombre AS empleado_nombre, u.email
+    // Traer solo los documentos de el área del jefe
+    $stmt = $pdo->prepare("
+        SELECT d.id, d.nombre_original, d.tipo, d.fecha_subida, u.nombre AS empleado_nombre
         FROM documentos d
-        INNER JOIN usuarios u ON d.id_usuario = u.id
+        JOIN usuarios u ON d.id_usuario = u.id
+        WHERE d.id_area_destino = ?
         ORDER BY d.fecha_subida DESC
     ");
+    $stmt->execute([$id_area_jefe]);
     $documentos = $stmt->fetchAll();
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
+
+$page_title = "Documentos de mi Área";
+require_once '../includes/header_jefe.php';
+require_once '../includes/sidebar_jefe.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Documentos de Empleados</title>
-</head>
-<body>
-  <h1>📂 Documentos de Empleados</h1>
-  <nav>
-    <a href="area_dashboard.php">Volver al Dashboard</a> | 
-    <a href="../php/logout.php">Cerrar sesión</a>
-  </nav>
-  <hr>
+<style>
+    /* ... (puedes añadir los estilos de tabla y búsqueda aquí) ... */
+</style>
 
-  <?php if (count($documentos) > 0): ?>
-    <table border="1" cellpadding="8" cellspacing="0">
-      <tr>
-        <th>ID</th>
-        <th>Empleado</th>
-        <th>Email</th>
-        <th>Tipo</th>
-        <th>Nombre Original</th>
-        <th>Fecha</th>
-        <th>Acción</th>
-      </tr>
-      <?php foreach ($documentos as $doc): ?>
-      <tr>
-        <td><?php echo $doc['id']; ?></td>
-        <td><?php echo htmlspecialchars($doc['empleado_nombre']); ?></td>
-        <td><?php echo htmlspecialchars($doc['email']); ?></td>
-        <td><?php echo htmlspecialchars($doc['tipo']); ?></td>
-        <td><?php echo htmlspecialchars($doc['nombre_original']); ?></td>
-        <td><?php echo $doc['fecha_subida']; ?></td>
-        <td>
-          <a href="../php/ver_documento.php?id=<?php echo $doc['id']; ?>">📥 Descargar</a>
+<div class="main">
+    <header class="topbar">
+      <h1><i class="fas fa-folder-open"></i> Documentos Recibidos en tu Área</h1>
+    </header>
 
-        </td>
-      </tr>
-      <?php endforeach; ?>
-    </table>
-  <?php else: ?>
-    <p>No hay documentos subidos.</p>
-  <?php endif; ?>
-</body>
-</html>
+    <main class="content">
+        <div class="card">
+            <h3>Listado de Documentos</h3>
+            <?php if (empty($documentos)): ?>
+                <p>Tu área aún no ha recibido documentos.</p>
+            <?php else: ?>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Tipo</th>
+                            <th>Enviado por</th>
+                            <th>Fecha</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($documentos as $doc): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($doc['nombre_original']) ?></td>
+                            <td><?= htmlspecialchars($doc['tipo']) ?></td>
+                            <td><?= htmlspecialchars($doc['empleado_nombre']) ?></td>
+                            <td><?= $doc['fecha_subida'] ?></td>
+                            <td>
+                                <a href="ver_documento_area.php?id=<?= $doc['id'] ?>" class="btn-download">Revisar</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </main>
+</div>
+
+<?php require_once '../includes/footer.php'; ?>
