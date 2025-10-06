@@ -2,7 +2,7 @@
 session_start();
 require '../php/db.php';
 
-// Verificar sesión
+// Verificar sesión de Admin
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../php/login.html");
     exit;
@@ -21,23 +21,16 @@ try {
     $stmt->execute([$usuario_id]);
     $usuario = $stmt->fetch();
 
-    // Definir ruta de la foto
-    $foto_usuario = "../img/user2.png"; // valor por defecto
-    if (!empty($usuario['foto']) && file_exists("../uploads/usuarios/" . $usuario['foto'])) {
-        $foto_usuario = "../uploads/usuarios/" . htmlspecialchars($usuario['foto']);
-    }
+    // Traer las secciones del legajo
+    $secciones = $pdo->query("SELECT id, nombre FROM secciones_legajo ORDER BY nombre ASC")->fetchAll();
 
-    // Documentos del usuario
-    $stmt = $pdo->prepare("
-        SELECT id, nombre_original, nombre_guardado, tipo, fecha_subida
-        FROM documentos
-        WHERE id_usuario = ?
-        ORDER BY fecha_subida DESC
-    ");
-    $stmt->execute([$usuario_id]);
-    $documentos = $stmt->fetchAll();
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
+}
+
+$foto_usuario = "../img/user2.png";
+if (!empty($usuario['foto']) && file_exists("../uploads/usuarios/" . $usuario['foto'])) {
+    $foto_usuario = "../uploads/usuarios/" . htmlspecialchars($usuario['foto']);
 }
 ?>
 <!DOCTYPE html>
@@ -46,11 +39,10 @@ try {
   <meta charset="UTF-8">
   <title>Mi Legajo - Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style/mi_legajo.css"> <!-- 👈 usamos el mismo CSS del dashboard -->
+  <link rel="stylesheet" href="../style/mi_legajo.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
       <h2>Bienvenido</h2>
@@ -62,24 +54,22 @@ try {
     </div>
     <nav class="menu">
       <a href="admin_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
-      <a href="enviar_documento.php"><i class="fas fa-upload"></i> Subir Documento</a>
+      <a href="mi_legajo.php" class="active"><i class="fas fa-folder-open"></i> Mi Legajo</a>
+      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
+      <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
+      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
       <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
     </nav>
-
   </aside>
 
-  <!-- Main content -->
   <div class="main">
-    <!-- Topbar -->
     <header class="topbar">
       <h1><i class="fas fa-folder-open"></i> Mi Legajo</h1>
       <div class="top-actions">
           <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
       </div>
-</header>
+    </header>
 
-
-    <!-- Content -->
     <section class="content">
         <div class="card">
             <h3><i class="fas fa-user"></i> Mis Datos</h3>
@@ -89,46 +79,23 @@ try {
             <p><strong>Área:</strong> <?= htmlspecialchars($usuario['area'] ?? 'No asignada'); ?></p>
         </div>
 
-
-
-      <div class="cards">
-        <div class="card full-width">
-          <h3><i class="fas fa-folder"></i> Mis Documentos</h3>
-          <?php if (count($documentos) > 0): ?>
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Tipo</th>
-                    <th>Nombre Original</th>
-                    <th>Fecha</th>
-                    <th>Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($documentos as $doc): ?>
-                  <tr>
-                    <td><?= $doc['id']; ?></td>
-                    <td><?= htmlspecialchars($doc['tipo']); ?></td>
-                    <td><?= htmlspecialchars($doc['nombre_original']); ?></td>
-                    <td><?= $doc['fecha_subida']; ?></td>
-                    <td>
-                        <a class="btn-download" href="../php/ver_documento.php?id=<?= $doc['id']; ?>">
-                        <i class="fas fa-download"></i> Descargar
+        <div class="card">
+            <h3><i class="fas fa-folder"></i> Secciones de Mi Legajo</h3>
+            <p>Selecciona una sección para ver o subir tus documentos personales.</p>
+            <?php if (!empty($secciones)): ?>
+                <ul>
+                <?php foreach ($secciones as $sec): ?>
+                    <li>
+                        <a href="seccion_legajo_admin.php?id=<?= $sec['id']; ?>" style="display: block; padding: 10px; background: #f0f0f0; margin-bottom: 5px; text-decoration: none; color: #333; border-radius: 5px;">
+                            <i class="fas fa-chevron-right"></i> <?= htmlspecialchars($sec['nombre']); ?>
                         </a>
-                    </td>
-
-                  </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            </div>
-          <?php else: ?>
-            <p class="empty">No has subido documentos aún.</p>
-          <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p>No hay secciones definidas en el sistema.</p>
+            <?php endif; ?>
         </div>
-      </div>
     </section>
   </div>
 </body>
