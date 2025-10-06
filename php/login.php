@@ -1,34 +1,35 @@
 <?php
 session_start();
-require 'db.php'; // Asegúrate que aquí inicializas $pdo correctamente
+require 'db.php'; 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Recibir datos del formulario
-    $email = trim($_POST['usuario'] ?? '');   // el input "usuario" será el email
+    $email = trim($_POST['usuario'] ?? '');
     $clave = trim($_POST['clave'] ?? '');
 
-    if ($email === '' || $clave === '') {
-        echo "Por favor complete todos los campos.";
-        exit;
+    if (empty($email) || empty($clave)) {
+        die("Por favor complete todos los campos.");
     }
 
     try {
-        // Buscar usuario por email (agregamos id_area)
-        $stmt = $pdo->prepare("SELECT id, nombre, email, password_hash, rol, id_area 
+        // --- CORRECCIÓN AQUÍ: Añadimos la columna 'foto' a la consulta ---
+        $stmt = $pdo->prepare("SELECT id, nombre, email, password_hash, rol, id_area, foto 
                                FROM usuarios 
                                WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($clave, $user['password_hash'])) {
-            // Guardar sesión
+            // Guardar todos los datos en la sesión
             $_SESSION['id']       = $user['id'];
             $_SESSION['nombre']   = $user['nombre'];
             $_SESSION['email']    = $user['email'];
             $_SESSION['rol']      = $user['rol'];
-            $_SESSION['id_area']  = $user['id_area'];  // ✅ IMPORTANTE
+            $_SESSION['id_area']  = $user['id_area'];
+            
+            // --- CORRECCIÓN AQUÍ: Guardamos el nombre del archivo de la foto ---
+            $_SESSION['foto']  = $user['foto']; // Esto ahora sí tendrá un valor
 
-            // Redirigir según el rol
+            // Redirigir según el rol (tu código existente)
             switch ($user['rol']) {
                 case 'admin':
                     header("Location: ../admin/admin_dashboard.php");
@@ -55,6 +56,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (PDOException $e) {
         echo "Error en la base de datos: " . $e->getMessage();
     }
-} else {
-    echo "Método no permitido.";
 }
+?>

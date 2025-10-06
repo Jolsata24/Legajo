@@ -1,50 +1,61 @@
 <?php
 session_start();
+require '../php/db.php';
 
-// Verificar si está logueado y si es empleado
+// Seguridad: Solo Empleados
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
-    header("Location: login.html");
+    header("Location: ../into/login.html");
     exit;
 }
 
-$nombre = $_SESSION['nombre'] ?? "Empleado";
+// Traer las áreas para el menú desplegable
+try {
+    $areas = $pdo->query("SELECT id, nombre FROM areas ORDER BY nombre ASC")->fetchAll();
+} catch (PDOException $e) {
+    die("Error al cargar las áreas: " . $e->getMessage());
+}
+
+$page_title = "Enviar Documento";
+require_once '../includes/header_empleado.php';
+require_once '../includes/sidebar_empleado.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Enviar Documento</title>
-</head>
-<body>
-  <h1>Enviar Documento</h1>
-  <p>Bienvenido <?php echo htmlspecialchars($nombre); ?>, aquí puedes subir tus documentos.</p>
 
-  <form action="../php/upload.php" method="POST" enctype="multipart/form-data">
-    <label for="documento">Selecciona un documento:</label><br>
-    <input type="file" name="documento" id="documento" required><br><br>
+<div class="main">
+    <header class="topbar">
+      <h1><i class="fas fa-paper-plane"></i> Enviar Documento para Revisión</h1>
+    </header>
 
-    <label for="tipo">Tipo de documento:</label><br>
-    <select name="tipo" id="tipo" required>
-      <option value="cv">Currículum Vitae</option>
-      <option value="dni">DNI</option>
-      <option value="certificado">Certificado</option>
-      <option value="otro">Otro</option>
-    </select><br><br>
-    <label for="area">Área destino solicitada:</label><br>
-<select name="area" id="area" required>
-  <option value="">-- Selecciona área --</option>
-  <?php
-  // Traer todas las áreas
-  $areas = $pdo->query("SELECT id, nombre FROM areas ORDER BY nombre")->fetchAll();
-  foreach ($areas as $a) {
-      echo "<option value='{$a['id']}'>" . htmlspecialchars($a['nombre']) . "</option>";
-  }
-  ?>
-</select><br><br>
-    <button type="submit">Subir Documento</button>
-  </form>
+    <main class="content">
+        <div class="card">
+            <h3>Nuevo Envío</h3>
+            <p>El documento que subas será enviado primero a Secretaría para su revisión y posterior asignación al área correspondiente.</p>
+            
+            <form action="../php/upload.php" method="POST" enctype="multipart/form-data" class="form-dashboard">
+                <div class="form-group">
+                    <label for="tipo">Tipo de documento (ej. Solicitud, Informe, etc.):</label>
+                    <input type="text" name="tipo" id="tipo" required placeholder="Ej: Solicitud de Vacaciones">
+                </div>
 
-  <br>
-  <a href="empleado_dashboard.php">⬅ Volver al Dashboard</a>
-</body>
-</html>
+                <div class="form-group">
+                    <label for="area">Área a la que solicitas enviar el documento:</label>
+                    <select name="area" id="area" required>
+                        <option value="">-- Selecciona el área de destino --</option>
+                        <?php foreach ($areas as $a): ?>
+                            <option value="<?= $a['id'] ?>"><?= htmlspecialchars($a['nombre']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="documento">Selecciona un documento (PDF, Word, JPG, PNG):</label>
+                    <input type="file" name="documento" id="documento" required>
+                </div>
+                
+                <button type="submit" class="btn-primary">Enviar a Secretaría</button>
+            </form>
+        </div>
+    </main>
+</div>
+<style>.form-dashboard label { display: block; margin-bottom: 5px; font-weight: 600; } .form-dashboard input, .form-dashboard select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 15px; } .form-dashboard .btn-primary { padding: 10px 20px; }</style>
+
+<?php require_once '../includes/footer.php'; ?>
