@@ -24,6 +24,5 @@ if (!empty($_SESSION['foto'])) {
   
   <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
   <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
-  <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
 </nav>
 </aside>

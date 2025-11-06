@@ -21,6 +21,5 @@ if (!empty($_SESSION['foto'])) {
       <a href="area_documentos.php"><i class="fas fa-folder-open"></i> Documentos de mi Área</a>
       <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados de mi Área</a>
       <a href="mi_legajo.php"><i class="fas fa-user-circle"></i> Mi Legajo Personal</a>
-      <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
     </nav>
 </aside>

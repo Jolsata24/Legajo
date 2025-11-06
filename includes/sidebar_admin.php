@@ -24,6 +24,5 @@ if (!empty($_SESSION['foto'])) {
       <a href="crear_usuario.php"><i class="fas fa-user-plus"></i> Crear Usuario</a>
       <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
       <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
-      <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
     </nav>
 </aside>

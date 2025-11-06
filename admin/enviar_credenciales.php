@@ -59,4 +59,5 @@ try {
 } catch (Exception $e) {
     echo "El mensaje no pudo ser enviado. Mailer Error: {$mail->ErrorInfo}";
 }
+
 ?>

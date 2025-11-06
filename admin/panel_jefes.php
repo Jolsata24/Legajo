@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../php/db.php';
-
+require_once '../includes/sidebar_admin.php';
 // Verificar sesión solo secretaria
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../into/login.html");

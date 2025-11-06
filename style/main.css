@@ -1,4 +1,29 @@
-/* Fuente y reset */
+/* ===================================================================
+   PASO 1: Paleta de Colores Profesional (Variables CSS)
+   =================================================================== */
+:root {
+  --color-primario: #0d6efd;       /* Azul corporativo (Bootstrap Blue) */
+  --color-primario-hover: #0b5ed7;
+  --color-secundario: #6c757d;     /* Gris para acciones secundarias */
+  --color-exito: #198754;         /* Verde */
+  --color-peligro: #dc3545;       /* Rojo */
+  --color-advertencia: #ffc107;   /* Amarillo */
+  --color-info: #0dcaf0;          /* Celeste */
+
+  --color-fondo-cuerpo: #f8f9fa;  /* Gris muy claro para el fondo */
+  --color-fondo-sidebar: #212529; /* Gris oscuro (casi negro) */
+  --color-texto-sidebar: #f8f9fa;
+  --color-fondo-tarjeta: #ffffff;
+  --color-texto-principal: #212529;
+  --color-texto-secundario: #6c757d;
+  --color-borde: #dee2e6;
+
+  --sombra-tarjeta: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ===================================================================
+   Reset Básico y Fuente
+   =================================================================== */
 * {
   margin: 0;
   padding: 0;
@@ -8,913 +33,420 @@
 
 body {
   display: flex;
-  background: #f5f6fa;
-  color: #333;
+  background: var(--color-fondo-cuerpo);
+  color: var(--color-texto-principal);
   min-height: 100vh;
 }
 
-/* SIDEBAR */
+/* ===================================================================
+   PASO 2: Barra Lateral (Sidebar) Mejorada
+   =================================================================== */
 .sidebar {
-  width: 300px;
+  width: 280px; /* Un poco más angosto */
   height: 100vh;
-  background: #272727; /* azul marino */
-  color: #fff;
+  background: var(--color-fondo-sidebar);
+  color: var(--color-texto-sidebar);
   position: fixed;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 30px 15px;
+  padding: 24px 15px;
   box-sizing: border-box;
-
+  border-right: 1px solid var(--color-borde);
+  transition: transform 0.3s ease;
 }
 
 .sidebar .brand h2 {
   font-size: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   font-weight: 600;
-  color: #ffffff; /* dorado/naranja acento */
+  color: #fff;
+  text-align: center;
 }
 
 .sidebar .user-info {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #495057; /* Separador sutil */
+  padding-bottom: 24px;
 }
 
 .sidebar .user-info img {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 10px;
-  border: 3px solid #ffffff;
-  box-shadow: 1px 1px 1px 1px rgba(255, 255, 255, 0.3);
+  margin-bottom: 12px;
+  border: 4px solid #495057;
 }
 
 .sidebar .user-info h4 {
   font-size: 16px;
   font-weight: 600;
+  color: #fff;
 }
 
 .sidebar .user-info p {
   font-size: 13px;
-  color: #ddd;
+  color: var(--color-secundario);
 }
 
 .sidebar .menu {
   display: flex;
   flex-direction: column;
   width: 100%;
-  margin-top: 20px;
 }
 
 .sidebar .menu a {
   text-decoration: none;
-  color: #fff;
-  padding: 12px 15px;
-  margin: 5px 0;
+  color: var(--color-texto-sidebar);
+  padding: 14px 18px;
+  margin: 4px 0;
   border-radius: 8px;
-  transition: 0.3s;
-  font-size: 18px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 15px; /* Ligeramente más pequeño y legible */
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
+.sidebar .menu a i {
+  font-size: 16px;
+  width: 20px; /* Ancho fijo para alinear iconos */
+  text-align: center;
+}
+
+/* ¡¡IMPORTANTE: El estilo del enlace activo que faltaba!! */
+.sidebar .menu a.active,
 .sidebar .menu a:hover {
-  background: #ffffff;
-  color: #000000;
+  background: var(--color-primario);
+  color: #fff;
   font-weight: 500;
 }
 
-.menu a i {
-  margin-right: 10px;
-  font-size: 16px;
+.sidebar .menu a.logout-btn {
+  margin-top: 20px;
+  background: var(--color-peligro);
+  color: #fff;
+}
+.sidebar .menu a.logout-btn:hover {
+  background: #b02a37;
 }
 
-/* MAIN */
+/* ===================================================================
+   Contenido Principal (Main)
+   =================================================================== */
 .main {
   flex: 1;
-  padding: 20px 30px;
-  margin-left: 300px;
+  padding: 24px;
+  margin-left: 280px; /* Debe coincidir con el ancho del sidebar */
+  transition: margin-left 0.3s ease;
 }
 
-/* TOPBAR */
+/* ===================================================================
+   Barra Superior (Topbar)
+   =================================================================== */
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
-  padding: 15px 25px;
+  background: var(--color-fondo-tarjeta);
+  padding: 16px 24px;
   border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+  margin-bottom: 24px;
+  box-shadow: var(--sombra-tarjeta);
+  border: 1px solid var(--color-borde);
 }
 
 .topbar h1 {
-  font-size: 20px;
-  color: #272727;
+  font-size: 22px;
+  color: var(--color-texto-principal);
   font-weight: 600;
+  margin: 0;
 }
 
 .topbar .top-actions {
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-.logout-btn {
-  background: #f87171; /* rojo elegante */
-  color: #fff;
-  padding: 8px 15px;
-  border-radius: 8px;
-  text-decoration: none;
   font-size: 14px;
-  font-weight: 500;
-  transition: 0.3s;
+  color: var(--color-texto-secundario);
 }
 
-.logout-btn:hover {
-  background: #dc2626;
-}
-
-/* CONTENT CARDS */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 50px;
-}
-
+/* ===================================================================
+   PASO 5: Tarjetas (Cards) Mejoradas
+   =================================================================== */
 .card {
-  background: #fff;
-  padding: 20px;
+  background: var(--color-fondo-tarjeta);
+  padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  text-align:left;
-  transition: 0.3s;
-  margin-bottom: 20px;
+  box-shadow: var(--sombra-tarjeta);
+  border: 1px solid var(--color-borde);
+  margin-bottom: 24px;
+  overflow: hidden; /* Para que el borde superior funcione */
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
-}
-
+/* Este borde le da el toque de "branding" */
+.card-header,
 .card h3 {
-  font-size: 16px;
-  color: #272727;
-  margin-bottom: 10px;
-}
-
-.card p {
-  font-size: 22px;
+  font-size: 18px;
+  color: var(--color-texto-principal);
+  margin: -24px -24px 20px -24px; /* Saca el header al borde */
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-borde);
+  background: #fdfdfd;
   font-weight: 600;
-  color: #272727;
+}
+.card h3 i {
+  margin-right: 8px;
+  color: var(--color-primario);
+}
+.card p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-texto-secundario);
+}
+.card .card p { /* Párrafos dentro de la tarjeta (no los de métricas) */
+  font-size: 14px;
+  font-weight: 400;
+  text-align: left;
+  color: var(--color-texto-secundario);
 }
 
-.chart-card canvas {
-  max-width: 600px;  /* controla el ancho */
-  width: 100%;       /* que se adapte */
-}
-.chart-card {
-  position: relative;
-  height: 350px; /* aquí ajustas la altura */
-  max-width: 700px; /* ancho máximo */
-  margin: auto; /* centrado */
-}
-
-.table-container{
-  background: var(--card-bg);
-  padding:18px;
-  border-radius:14px;
-  box-shadow: 0 8px 30px rgba(2,6,23,0.06);
-  overflow:hidden;
-}
-
-/* Responsive wrapper */
-.table-responsive{
-  width:100%;
-  overflow-x:auto;
-}
-
-/* Nice table */
-.styled-table{
-  width:100%;
-  border-collapse: collapse;
-  min-width:720px; /* allow horizontal scroll on small screens */
-  font-size:14px;
-}
-.styled-table thead tr{
-  background: linear-gradient(90deg,var(--accent-dark),var(--accent));
-  color:#4b4444;
-}
-.styled-table thead th{
-  padding:14px 16px;
-  text-align:left;
-  font-weight:600;
-  font-size:13px;
-  letter-spacing:0.2px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.styled-table tbody tr{
-  background: #fff;
-}
-.styled-table tbody tr:nth-child(even){
-  background: var(--table-row-alt);
-}
-.styled-table tbody td{
-  padding:12px 14px;
-  vertical-align:middle;
-  color:#153243;
-  border-bottom:1px solid #eef2f7;
-}
-.styled-table tbody tr:hover{
-  background: linear-gradient(90deg, rgba(14,165,233,0.06), rgba(56,189,248,0.04));
-  transform: translateY(-1px);
-}
-
-/* Download button */
-.btn-download{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  text-decoration:none;
-  background: linear-gradient(90deg,var(--accent),var(--accent-dark));
-  color:#04263a;
-  padding:8px 12px;
-  border-radius:8px;
-  font-weight:600;
-  box-shadow: 0 6px 18px rgba(14,165,233,0.14);
-  transition: transform .12s ease, box-shadow .12s ease;
-  font-size:13px;
-}
-.btn-download i { color:#04263a; }
-.btn-download:hover{
-  transform: translateY(-3px);
-  box-shadow: 0 10px 26px rgba(14,165,233,0.16);
-}
-
-/* Empty state */
-.empty, .no-data {
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(2,6,23,0.04);
-  color: var(--muted);
-  text-align:center;
-}
-
-/* Small helpers */
-.small { font-size:13px; color:var(--muted); }
-.badge {
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:600;
-}
-
-/* Grid general */
-.card-grid {
+/* Tarjetas de métricas (las de "Total Documentos") */
+.cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
+  margin-bottom: 24px;
 }
-
-/* Tarjeta compacta */
-.card-mini {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  padding: 15px;
+.cards .card { /* Estilo específico para las tarjetas de métricas */
+  padding: 20px;
+  text-align: left;
+  border-left: 5px solid var(--color-primario);
 }
-
-/* Hover efecto */
-.card-mini:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+.cards .card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
 }
-
-/* Icono header */
-.card-mini .card-header {
-  font-size: 40px;
-  color: #272727;
-  margin-bottom: 10px;
+.cards .card h3 {
+  margin: 0 0 8px 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+  text-transform: uppercase;
 }
-
-/* Contenido */
-.card-mini h3 {
-  font-size: 16px;
-  margin: 5px 0;
-  color: #333;
-}
-.card-mini p {
-  font-size: 13px;
-  color: #666;
+.cards .card p {
   margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-texto-principal);
 }
 
-/* Footer */
-.card-mini .card-footer {
-  margin-top: 12px;
-}
-.card-mini .btn-view {
-  display: inline-block;
-  padding: 6px 12px;
-  background: #272727;
-  color: #fff;
-  font-size: 13px;
-  border-radius: 6px;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.card-mini .btn-view:hover {
-  background: #454545;
-}
+/* ===================================================================
+   PASO 3: Botones (Buttons) y Formularios (Forms) Unificados
+   =================================================================== */
 
-.btn-back {
+/* Estilo base de botón */
+.btn, .btn-primary, .btn-secondary, .btn-download, .btn-view, .btn-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  background: #272727;
-  color: #fff;
+  padding: 10px 18px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 8px;
   text-decoration: none;
-  transition: all 0.3s ease;
-  margin-bottom: 20px;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
 }
-
-.btn-back:hover {
-  background: #454545;
+.btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-download:hover, .btn-view:hover, .btn-back:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.btn-back i {
-  font-size: 16px;
+/* Botón Primario (Azul) */
+.btn-primary {
+  background-color: var(--color-primario);
+  color: #fff;
+}
+.btn-primary:hover {
+  background-color: var(--color-primario-hover);
 }
 
-/* Estilo del bloque Revisar Documento */
+/* Botón Secundario (Gris) */
+.btn-secondary, .btn-back, .btn-view {
+  background-color: var(--color-secundario);
+  color: #fff;
+}
+.btn-secondary:hover, .btn-back:hover, .btn-view:hover {
+  background-color: #5a6268;
+}
+
+/* Botón de Descarga (Outline) */
+.btn-download {
+  background-color: #fff;
+  color: var(--color-primario);
+  border: 1px solid var(--color-primario);
+}
+.btn-download:hover {
+  background-color: var(--color-primario);
+  color: #fff;
+}
+
+/* Formularios */
 .form-dashboard {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-
+.form-group {
+    margin-bottom: 1rem;
+}
 .form-dashboard label {
   font-weight: 600;
-  margin-bottom: 4px;
-  color: #454545;
+  margin-bottom: 6px;
+  color: #495057;
+  font-size: 14px;
 }
-
+.form-dashboard input[type="text"],
+.form-dashboard input[type="email"],
+.form-dashboard input[type="password"],
+.form-dashboard input[type="file"],
 .form-dashboard select,
-.form-dashboard textarea,
-.form-dashboard input[type="file"] {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.form-dashboard select:focus,
-.form-dashboard textarea:focus,
-.form-dashboard input[type="file"]:focus {
-  border-color: #454545;
-  outline: none;
-  box-shadow: 0 0 6px rgba(52, 152, 219, 0.3);
-}
-
 .form-dashboard textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background: #454545;
-  color: #fff;
-  border: none;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
   border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
   font-size: 14px;
-  transition: background 0.3s ease;
-}
-
-.btn-primary:hover {
-  background: #1b1b1b;
-}
-
-/* Para el título de la tarjeta */
-.card-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #454545;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-download {
-    background: white;
-    border: 2px solid #454545;
-    border-radius: 12px;
-    color: #454545;
-    padding: 6px 14px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: 0.3s;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    text-decoration: none;
-    display: inline-block;
-}
-.btn-download:hover {
-    background: #454545;
-    color: white;
-    transform: translateY(-2px);
-}
-
-.card-body p {
-  margin: 6px 0;
-  font-size: 0.9rem;
-}
-
-.card-label {
-  font-weight: 600;
-  color: #555;
-  display: inline-block;
-  min-width: 130px; /* para alinear */
-}
-
-.card-value {
-  font-weight: 500;
-  color: #007bff;
-}
-
-/* Fuente y reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
-}
-
-body {
-  display: flex;
-  background: #f5f6fa;
-  color: #333;
-  min-height: 100vh;
-}
-
-/* SIDEBAR */
-.sidebar {
-  width: 300px;
-  height: 100vh;
-  background: #272727; /* azul marino */
-  color: #fff;
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 15px;
-  box-sizing: border-box;
-
-}
-
-.sidebar .brand h2 {
-  font-size: 20px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  color: #ffffff; /* dorado/naranja acento */
-}
-
-.sidebar .user-info {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.sidebar .user-info img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
-  border: 3px solid #ffffff;
-  box-shadow: 1px 1px 1px 1px rgba(255, 255, 255, 0.3);
-}
-
-.sidebar .user-info h4 {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.sidebar .user-info p {
-  font-size: 13px;
-  color: #ddd;
-}
-
-.sidebar .menu {
-  display: flex;
-  flex-direction: column;
   width: 100%;
-  margin-top: 20px;
+}
+.form-dashboard input:focus,
+.form-dashboard select:focus,
+.form-dashboard textarea:focus {
+  outline: 0;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }
 
-.sidebar .menu a {
-  text-decoration: none;
-  color: #fff;
-  padding: 12px 15px;
-  margin: 5px 0;
+/* ===================================================================
+   Tablas (Tables)
+   =================================================================== */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-borde);
   border-radius: 8px;
-  transition: 0.3s;
-  font-size: 18px;
 }
-
-.sidebar .menu a:hover {
-  background: #ffffff;
-  color: #000000;
-  font-weight: 500;
-}
-
-.menu a i {
-  margin-right: 10px;
-  font-size: 16px;
-}
-
-/* MAIN */
-.main {
-  flex: 1;
-  padding: 20px 30px;
-  margin-left: 300px;
-}
-
-/* TOPBAR */
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  padding: 15px 25px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-}
-
-.topbar h1 {
-  font-size: 20px;
-  color: #272727;
-  font-weight: 600;
-}
-
-.topbar .top-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.logout-btn {
-  background: #f87171; /* rojo elegante */
-  color: #fff;
-  padding: 8px 15px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: 0.3s;
-}
-
-.logout-btn:hover {
-  background: #dc2626;
-}
-
-/* CONTENT CARDS */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 50px;
-}
-
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  text-align:left;
-  transition: 0.3s;
-  margin-bottom: 20px;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
-}
-
-.card h3 {
-  font-size: 16px;
-  color: #272727;
-  margin-bottom: 10px;
-}
-
-.card p {
-  font-size: 22px;
-  font-weight: 600;
-  color: #272727;
-}
-
-.chart-card canvas {
-  max-width: 600px;  /* controla el ancho */
-  width: 100%;       /* que se adapte */
-}
-.chart-card {
-  position: relative;
-  height: 350px; /* aquí ajustas la altura */
-  max-width: 700px; /* ancho máximo */
-  margin: auto; /* centrado */
-}
-
-.content{
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.692);
-    background-color: #ffffff;
-}
-.table-container{
-  background: var(--card-bg);
-  padding:18px;
-  border-radius:14px;
-  box-shadow: 0 8px 30px rgba(2,6,23,0.06);
-  overflow:hidden;
-}
-
-/* Responsive wrapper */
-.table-responsive{
-  width:100%;
-  overflow-x:auto;
-}
-
-/* Nice table */
-.styled-table{
-  width:100%;
+.styled-table {
+  width: 100%;
   border-collapse: collapse;
-  min-width:720px; /* allow horizontal scroll on small screens */
-  font-size:14px;
-}
-.styled-table thead tr{
-  background: linear-gradient(90deg,var(--accent-dark),var(--accent));
-  color:#4b4444;
-}
-.styled-table thead th{
-  padding:14px 16px;
-  text-align:left;
-  font-weight:600;
-  font-size:13px;
-  letter-spacing:0.2px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.styled-table tbody tr{
-  background: #fff;
-}
-.styled-table tbody tr:nth-child(even){
-  background: var(--table-row-alt);
-}
-.styled-table tbody td{
-  padding:12px 14px;
-  vertical-align:middle;
-  color:#153243;
-  border-bottom:1px solid #eef2f7;
-}
-.styled-table tbody tr:hover{
-  background: linear-gradient(90deg, rgba(14,165,233,0.06), rgba(56,189,248,0.04));
-  transform: translateY(-1px);
-}
-
-/* Download button */
-.btn-download{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  text-decoration:none;
-  background: linear-gradient(90deg,var(--accent),var(--accent-dark));
-  color:#04263a;
-  padding:8px 12px;
-  border-radius:8px;
-  font-weight:600;
-  box-shadow: 0 6px 18px rgba(14,165,233,0.14);
-  transition: transform .12s ease, box-shadow .12s ease;
-  font-size:13px;
-}
-.btn-download i { color:#04263a; }
-.btn-download:hover{
-  transform: translateY(-3px);
-  box-shadow: 0 10px 26px rgba(14,165,233,0.16);
-}
-
-/* Empty state */
-.empty, .no-data {
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(2,6,23,0.04);
-  color: var(--muted);
-  text-align:center;
-}
-
-/* Small helpers */
-.small { font-size:13px; color:var(--muted); }
-.badge {
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:600;
-}
-
-/* Fuente y reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
-}
-
-body {
-  display: flex;
-  background: #f5f6fa;
-  color: #333;
-  min-height: 100vh;
-}
-
-/* SIDEBAR */
-.sidebar {
-  width: 300px;
-  background: #272727; /* azul marino */
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 15px;
-}
-
-.sidebar .brand h2 {
-  font-size: 20px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  color: #ffffff; /* dorado/naranja acento */
-}
-
-.sidebar .user-info {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.sidebar .user-info img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
-  border: 3px solid #ffffff;
-  box-shadow: 1px 1px 1px 1px rgba(255, 255, 255, 0.3);
-}
-
-.sidebar .user-info h4 {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.sidebar .user-info p {
-  font-size: 13px;
-  color: #ddd;
-}
-
-.sidebar .menu {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin-top: 20px;
-}
-
-.sidebar .menu a {
-  text-decoration: none;
-  color: #fff;
-  padding: 12px 15px;
-  margin: 5px 0;
-  border-radius: 8px;
-  transition: 0.3s;
-  font-size: 18px;
-}
-
-.sidebar .menu a:hover {
-  background: #ffffff;
-  color: #000000;
-  font-weight: 500;
-}
-
-.menu a i {
-  margin-right: 10px;
-  font-size: 16px;
-}
-
-/* MAIN */
-.main {
-  flex: 1;
-  padding: 20px 30px;
-}
-
-/* TOPBAR */
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  padding: 15px 25px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-}
-
-.topbar h1 {
-  font-size: 20px;
-  color: #272727;
-  font-weight: 600;
-}
-
-.topbar .top-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.logout-btn {
-  background: #f87171; /* rojo elegante */
-  color: #fff;
-  padding: 8px 15px;
-  border-radius: 8px;
-  text-decoration: none;
+  min-width: 720px;
   font-size: 14px;
-  font-weight: 500;
-  transition: 0.3s;
 }
-
-.logout-btn:hover {
-  background: #dc2626;
+.styled-table thead tr {
+  background-color: #f8f9fa;
+  color: var(--color-texto-secundario);
+  text-transform: uppercase;
+  font-size: 12px;
 }
-
-/* CONTENT CARDS */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 50px;
-}
-
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  text-align:left;
-  transition: 0.3s;
-  margin-bottom: 20px;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
-}
-
-.card h3 {
-  font-size: 16px;
-  color: #272727;
-  margin-bottom: 10px;
-}
-
-.card p {
-  font-size: 22px;
+.styled-table th {
+  padding: 14px 16px;
+  text-align: left;
   font-weight: 600;
-  color: #272727;
+  border-bottom: 2px solid var(--color-borde);
+}
+.styled-table tbody tr {
+  background: #fff;
+}
+.styled-table tbody tr:nth-child(even) {
+  background: #fcfcfc;
+}
+.styled-table tbody td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  color: var(--color-texto-principal);
+  border-bottom: 1px solid var(--color-borde);
+}
+.styled-table tbody tr:hover {
+  background: rgba(13, 110, 253, 0.05); /* Azul muy claro al pasar */
 }
 
-.chart-card canvas {
-  max-width: 600px;  /* controla el ancho */
-  width: 100%;       /* que se adapte */
-}
-.chart-card {
-  position: relative;
-  height: 350px; /* aquí ajustas la altura */
-  max-width: 700px; /* ancho máximo */
-  margin: auto; /* centrado */
+/* ===================================================================
+   PASO 4: Diseño Adaptable (Responsive)
+   =================================================================== */
+@media (max-width: 992px) {
+  .sidebar {
+    /* Ocultamos la sidebar fuera de la pantalla */
+    transform: translateX(-100%);
+    position: fixed;
+    z-index: 1000;
+  }
+  
+  /* (Aquí necesitarías un botón "burger" con JS para mostrarla) */
+  /* Pero por ahora, simplemente la ocultamos y dejamos que el contenido fluya */
+
+  .main {
+    margin-left: 0; /* El contenido principal ocupa todo el ancho */
+    padding: 15px;
+  }
+  
+  .topbar {
+    padding: 15px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr; /* Una sola columna en móviles */
+  }
 }
 
+/* ===================================================================
+   Utilidades (Estados de documentos, etc.)
+   =================================================================== */
+.estado {
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  display: inline-block;
+  text-transform: uppercase;
+}
+.estado-pendiente { background-color: #fff7cd; color: #855d00; }
+.estado-observado { background-color: #ffedd5; color: #9a3412; }
+.estado-revisado { background-color: #dcfce7; color: #166534; }
+.estado-rechazado { background-color: #fee2e2; color: #991b1b; }
+
+/* ===================================================================
+   Estilo para el Botón de Logout en la Barra Superior
+   =================================================================== */
+.topbar-logout-btn {
+  text-decoration: none;
+  color: var(--color-secundario); /* Un gris sutil */
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.topbar-logout-btn i {
+  color: var(--color-peligro); /* Icono en rojo */
+}
+
+.topbar-logout-btn:hover {
+  background-color: var(--color-peligro); /* Fondo rojo al pasar el mouse */
+  color: #fff; /* Texto blanco al pasar el mouse */
+}
+
+.topbar-logout-btn:hover i {
+  color: #fff; /* Icono blanco al pasar el mouse */
+}

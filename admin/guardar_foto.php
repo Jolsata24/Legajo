@@ -27,4 +27,5 @@ if (move_uploaded_file($foto_nueva['tmp_name'], $ruta_destino)) {
     header("Location: " . $pagina_perfil . "?status=error&msg=" . urlencode("Error al guardar la foto."));
     exit;
 }
+
 ?>

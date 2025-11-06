@@ -32,6 +32,9 @@ require_once '../includes/sidebar_jefe.php';
 <div class="main">
     <header class="topbar">
       <h1><i class="fas fa-tachometer-alt"></i> Dashboard de Jefe de Área</h1>
+      <a href="../php/logout.php" class="topbar-logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+      </a>
     </header>
 
     <main class="content">

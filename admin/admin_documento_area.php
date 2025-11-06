@@ -33,6 +33,8 @@ $documentos = $stmt->fetchAll();
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="es">

@@ -38,58 +38,89 @@ try {
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
+
+// --- ¡INICIO DE LA CORRECCIÓN DE ESTILO! ---
+
+$page_title = "Sección: " . htmlspecialchars($seccion['nombre']);
+require_once '../includes/header_empleado.php';
+require_once '../includes/sidebar_empleado.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Sección - <?php echo htmlspecialchars($seccion['nombre']); ?></title>
-</head>
-<body>
-  <h1>📂 Sección: <?php echo htmlspecialchars($seccion['nombre']); ?></h1>
 
-  <nav>
-    <a href="mi_legajo.php">⬅ Volver a Mi Legajo</a> | 
-    <a href="../php/logout.php">Cerrar sesión</a>
-  </nav>
-  <hr>
+<div class="main">
+    <header class="topbar">
+      <h1><i class="fas fa-folder-open"></i> Sección: <?= htmlspecialchars($seccion['nombre']); ?></h1>
+      
+      <div class="top-actions">
+          <a href="../php/logout.php" class="topbar-logout-btn">
+              <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </a>
+      </div>
+    </header>
 
-  <h2>📑 Documentos en esta sección</h2>
-  <?php if (!empty($documentos)): ?>
-    <table border="1" cellpadding="6" cellspacing="0">
-      <tr>
-        <th>ID</th>
-        <th>Tipo</th>
-        <th>Nombre original</th>
-        <th>Fecha</th>
-        <th>Acción</th>
-      </tr>
-      <?php foreach ($documentos as $doc): ?>
-        <tr>
-          <td><?php echo $doc['id']; ?></td>
-          <td><?php echo htmlspecialchars($doc['tipo']); ?></td>
-          <td><?php echo htmlspecialchars($doc['nombre_original']); ?></td>
-          <td><?php echo $doc['fecha_subida']; ?></td>
-          <td><a href="../php/ver_documento.php?id=<?php echo $doc['id']; ?>">Ver / Descargar</a></td>
-        </tr>
-      <?php endforeach; ?>
-    </table>
-  <?php else: ?>
-    <p>No has subido documentos en esta sección aún.</p>
-  <?php endif; ?>
+    <main class="content">
+        
+        <a href="mi_legajo.php" class="btn-back" style="margin-bottom: 20px;">
+            <i class="fas fa-arrow-left"></i> Volver a Mi Legajo
+        </a>
 
-  <hr>
+        <div class="card">
+            <h3><i class="fas fa-file-alt"></i> Documentos en esta sección</h3>
+            
+            <?php if (empty($documentos)): ?>
+                <p>No has subido documentos en esta sección aún.</p>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre Original</th>
+                                <th>Tipo</th>
+                                <th>Fecha de Subida</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($documentos as $doc): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($doc['nombre_original']); ?></td>
+                                    <td><?= htmlspecialchars($doc['tipo']); ?></td>
+                                    <td><?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])); ?></td>
+                                    <td>
+                                        <a href="../php/ver_documento.php?id=<?= $doc['id'] ?>&action=view" class="btn-download" target="_blank">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
 
-  <h2>📤 Subir nuevo documento a esta sección</h2>
-  <form action="subir_doc_personal.php" method="post" enctype="multipart/form-data">
-    <input type="hidden" name="seccion_id" value="<?php echo $seccion_id; ?>">
-    <label for="tipo">Tipo de documento:</label>
-    <input type="text" name="tipo" id="tipo" required>
-    <br><br>
-    <input type="file" name="documento" required>
-    <br><br>
-    <button type="submit">Subir documento</button>
-  </form>
+        <div class="card">
+            <h3><i class="fas fa-upload"></i> Subir Nuevo Documento</h3>
+            
+            <form action="subir_doc_personal.php" method="post" enctype="multipart/form-data" class="form-dashboard">
+                <input type="hidden" name="seccion_id" value="<?= $seccion_id; ?>">
+                
+                <div class="form-group">
+                    <label for="tipo">Tipo de documento:</label>
+                    <input type="text" name="tipo" id="tipo" required placeholder="Ej: Certificado de Trabajo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="documento">Archivo (PDF, Word, JPG, PNG):</label>
+                    <input type="file" name="documento" id="documento" required>
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-check"></i> Subir Documento
+                </button>
+            </form>
+        </div>
 
-</body>
-</html>
+    </main>
+</div>
+
+<?php require_once '../includes/footer.php'; ?>

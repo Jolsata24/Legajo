@@ -8,6 +8,7 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
 $page_title = "Editar Mi Perfil";
 // Incluimos el header que deberías crear para admin, si no, puedes construir el HTML aquí.
 // Por simplicidad, lo dejamos como en tu código original.
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
