@@ -50,8 +50,8 @@ require_once '../includes/sidebar_secretaria.php';
     </header>
 
     <main class="content">
-        <a href="secretaria_dashboard.php" class="btn-back" style="text-decoration:none; color: white; background: #333; padding: 10px; border-radius: 5px; display: inline-block; margin-bottom: 20px;">
-            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+        <a href="explorar_areas.php" class="btn-back" style="text-decoration:none; color: white; background: #333; padding: 10px; border-radius: 5px; display: inline-block; margin-bottom: 20px;">
+            <i class="fas fa-arrow-left"></i> Volver
         </a>
 
         <div class="card">

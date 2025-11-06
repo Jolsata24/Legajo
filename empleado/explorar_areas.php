@@ -10,11 +10,12 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
 try {
     // Obtener todas las áreas que tienen al menos un documento
     $areas = $pdo->query(
-        "SELECT DISTINCT a.id, a.nombre 
-         FROM areas a
-         JOIN documentos d ON a.id = d.id_area_destino
-         ORDER BY a.nombre ASC"
-    )->fetchAll();
+    "SELECT DISTINCT a.id, a.nombre 
+     FROM areas a
+     JOIN documentos d ON a.id = d.id_area_destino
+     WHERE d.estado = 'revisado'  -- ¡CONDICIÓN AÑADIDA!
+     ORDER BY a.nombre ASC"
+)->fetchAll();
 
 } catch (PDOException $e) {
     // Manejar error

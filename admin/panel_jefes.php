@@ -1,8 +1,8 @@
 <?php
 session_start();
 require '../php/db.php';
-require_once '../includes/sidebar_admin.php';
-// Verificar sesión solo secretaria
+
+// 1. LÓGICA PHP (Se mantiene tu lógica original)
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../into/login.html");
     exit;
@@ -14,71 +14,89 @@ try {
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
-$foto_path = '../img/user2.png';
-if (!empty($_SESSION['foto'])) {
-    $ruta_foto_usuario = '../uploads/usuarios/' . $_SESSION['foto'];
-    if (file_exists($ruta_foto_usuario)) {
-        $foto_path = $ruta_foto_usuario;
-    }
-}
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Áreas - Documentos</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="brand">
-      <h2>Panel de Admin</h2>
-    </div>
-    <div class="user-info">
-      <img src="<?= htmlspecialchars($foto_path) ?>" alt="Foto del Usuario">
-      <h4><?= htmlspecialchars($_SESSION['nombre'] ?? 'Admin') ?></h4>
-      <p><?= htmlspecialchars(ucfirst($_SESSION['rol'] ?? '')) ?></p>
-    </div>
-    <nav class="menu">
-      <a href="admin_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
-      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
-      <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
-      <a href="crear_usuario.php"><i class="fas fa-user-plus"></i> Crear Usuario</a>
-      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
-      <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
-    </nav>
-</aside>
 
-  <!-- Main -->
-  <div class="main">
+// --- INICIO DE CORRECCIÓN DE ESTILO ---
+
+$page_title = "Documentos por Área";
+// 2. Incluimos los headers y sidebars correctos
+require_once '../includes/header_admin.php';
+require_once '../includes/sidebar_admin.php';
+?>
+
+<div class="main">
     <header class="topbar">
-      <h1><i class="fas fa-building"></i> Áreas disponibles</h1>
-      <div class="top-actions"><span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span></div>
+      <h1><i class="fas fa-building"></i> Documentos por Área</h1>
+      
+      <div class="top-actions">
+          <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+          <a href="../php/logout.php" class="topbar-logout-btn">
+              <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </a>
+      </div>
     </header>
 
     <main class="content">
-      <?php if ($areas): ?>
-        <div class="card-grid">
-          <?php foreach ($areas as $area): ?>
-            <div class="card-mini">
-              <div class="card-header"><i class="fas fa-building"></i></div>
-              <div class="card-body"><h3><?= htmlspecialchars($area['nombre']); ?></h3></div>
-              <div class="card-footer">
-                <a class="btn-view" href="admin_documento_area.php?area_id=<?= $area['id']; ?>">
-                  <i class="fas fa-eye"></i> Ver Documentos
-                </a>
-              </div>
-            </div>
-          <?php endforeach; ?>
+        <div class="card">
+            <h3><i class="fas fa-sitemap"></i> Explorar Áreas</h3>
+            <p style="text-align: left;">Selecciona un área para ver todos los documentos que han sido asignados a ella.</p>
+            
+            <?php if ($areas): ?>
+                <div class="card-grid" style="margin-top: 20px;">
+                  
+                  <?php foreach ($areas as $area): ?>
+                    <a href="admin_documento_area.php?area_id=<?= $area['id']; ?>" class="area-card">
+                        <div class="area-card-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <div class="area-card-body">
+                            <h3><?= htmlspecialchars($area['nombre']); ?></h3>
+                        </div>
+                    </a>
+                  <?php endforeach; ?>
+
+                </div>
+            <?php else: ?>
+                <p>No hay áreas registradas.</p>
+            <?php endif; ?>
         </div>
-      <?php else: ?>
-        <p>No hay áreas registradas.</p>
-      <?php endif; ?>
     </main>
-  </div>
-</body>
-</html>
+</div>
+
+<style>
+    .area-card {
+        background: var(--color-fondo-tarjeta);
+        border-radius: 12px;
+        border: 1px solid var(--color-borde);
+        box-shadow: var(--sombra-tarjeta);
+        padding: 24px;
+        text-align: center;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-decoration: none;
+        color: var(--color-texto-principal);
+        min-height: 150px;
+    }
+    .area-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        border-color: var(--color-primario);
+    }
+    .area-card-icon {
+        font-size: 36px;
+        color: var(--color-primario);
+        margin-bottom: 15px;
+    }
+    .area-card-body h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: none;
+    }
+</style>
+
+<?php require_once '../includes/footer.php'; ?>

@@ -17,12 +17,13 @@ if (!empty($_SESSION['foto'])) {
       <p><?= htmlspecialchars(ucfirst($_SESSION['rol'] ?? '')) ?></p>
     </div>
     <nav class="menu">
-  <a href="secretaria_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
-  <a href="secretaria_documentos.php"><i class="fas fa-inbox"></i> Bandeja de Entrada</a>
-  
-  <a href="explorar_areas.php"><i class="fas fa-sitemap"></i> Explorar Áreas</a>
-  
-  <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-  <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
-</nav>
+      <a href="secretaria_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
+      <a href="secretaria_documentos.php"><i class="fas fa-inbox"></i> Bandeja de Entrada</a>
+      
+      <a href="explorar_areas.php"><i class="fas fa-sitemap"></i> Explorar Áreas</a>
+
+      <a href="empleados_panel.php"><i class="fas fa-users"></i> Ver Empleados</a>
+      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
+      <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
+    </nav>
 </aside>

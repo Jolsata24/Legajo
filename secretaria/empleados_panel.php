@@ -2,62 +2,111 @@
 session_start();
 require '../php/db.php';
 
-// Verificar sesión
-if (!isset($_SESSION['id']) || !in_array($_SESSION['rol'], ['jefe_area', 'rrhh', 'admin','secretaria'])) {
+// --- ¡CORRECCIÓN DE SEGURIDAD! ---
+// Esta página es solo para la secretaria
+if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'secretaria') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$usuario_id = $_SESSION['id'];
-$rol = $_SESSION['rol'];
-$id_area = $_SESSION['id_area'] ?? null;
-
 try {
-    if ($rol === 'jefe_area' && $id_area) {
-        // Jefe de área solo ve a empleados de su área
-        $stmt = $pdo->prepare("SELECT id, nombre, email, rol FROM usuarios WHERE id_area = ? AND rol = 'empleado'");
-        $stmt->execute([$id_area]);
-    } else {
-        // RRHH y Admin ven todos los empleados
-        $stmt = $pdo->query("SELECT id, nombre, email, rol FROM usuarios WHERE rol = 'empleado'");
-    }
+    // La lógica de la consulta es la misma que la del admin: ver TODOS los empleados
+    $stmt = $pdo->query("SELECT u.id, u.nombre, u.email, u.rol, a.nombre as area_nombre 
+                         FROM usuarios u 
+                         LEFT JOIN areas a ON u.id_area = a.id
+                         WHERE u.rol = 'empleado'
+                         ORDER BY u.nombre");
     $empleados = $stmt->fetchAll();
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Panel de Empleados</title>
-    <style>
-        .grid { display: flex; flex-wrap: wrap; gap: 15px; }
-        .card {
-            border: 1px solid #ccc; padding: 15px;
-            border-radius: 10px; width: 200px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-        }
-        .card h3 { margin: 0; font-size: 18px; }
-        .card p { margin: 5px 0; font-size: 14px; }
-        .card a { display: inline-block; margin-top: 10px; padding: 5px 10px; background: #007BFF; color: #fff; text-decoration: none; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <h1>👥 Panel de Empleados</h1>
-    <nav>
-        <a href="../php/logout.php">Cerrar sesión</a>
-    </nav>
-    <hr>
 
-    <div class="grid">
-        <?php foreach ($empleados as $emp): ?>
-            <div class="card">
-                <h3><?php echo htmlspecialchars($emp['nombre']); ?></h3>
-                <p><b>Email:</b> <?php echo htmlspecialchars($emp['email']); ?></p>
-                <a href="../panel_de_jefe/ver_empleado.php?id=<?php echo $emp['id']; ?>">Ver Detalle</a>
+$page_title = "Panel de Empleados";
+
+// --- ¡CORRECCIÓN DE INTERFAZ! ---
+// Cargamos el header y sidebar de SECRETARIA
+require_once '../includes/header_secretaria.php';
+require_once '../includes/sidebar_secretaria.php';
+?>
+
+<div class="main">
+    <header class="topbar">
+      <h1><i class="fas fa-users"></i> Panel de Empleados</h1>
+      
+      <div class="top-actions">
+          <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+          <a href="../php/logout.php" class="topbar-logout-btn">
+              <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </a>
+      </div>
+    </header>
+
+    <main class="content">
+        <div class="card">
+            
+            <div class="search-wrapper form-group">
+                <i class="fas fa-search"></i>
+                <input 
+                    type="text" 
+                    id="searchEmpleados" 
+                    class="form-dashboard" 
+                    placeholder="Buscar empleado por nombre, email o área..."
+                >
             </div>
-        <?php endforeach; ?>
-    </div>
-</body>
-</html>
+
+            <?php if (count($empleados) > 0): ?>
+                <div class="card-grid" id="empleadosGrid">
+                  
+                  <?php foreach ($empleados as $emp): ?>
+                    <div class="employee-card">
+                      <div class="employee-card-icon">
+                        <i class="fas fa-user-circle"></i>
+                      </div>
+                      <div class="employee-card-body">
+                        <h3><?= htmlspecialchars($emp['nombre']); ?></h3>
+                        <p><?= htmlspecialchars($emp['email']); ?></p>
+                        <small style="color: #6c757d; font-weight: 500;">
+                            Área: <?= htmlspecialchars($emp['area_nombre'] ?? 'Sin asignar'); ?>
+                        </small>
+                      </div>
+                      <div class="employee-card-footer">
+                        
+                        <a class="btn btn-outline-primary" href="ver_empleado.php?id=<?= $emp['id']; ?>">
+                          <i class="fas fa-eye"></i> Ver Legajo
+                        </a>
+                      </div>
+                    </div>
+                  <?php endforeach; ?>
+
+                </div>
+            <?php else: ?>
+                <p>No hay empleados registrados.</p>
+            <?php endif; ?>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchEmpleados');
+    const grid = document.getElementById('empleadosGrid');
+    if (grid) {
+        const cards = grid.getElementsByClassName('employee-card'); 
+        
+        searchInput.addEventListener('keyup', function() {
+            const filter = searchInput.value.toLowerCase();
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const cardText = card.textContent || card.innerText;
+                if (cardText.toLowerCase().includes(filter)) {
+                    card.style.display = "flex";
+                } else {
+                    card.style.display = "none";
+                }
+            }
+        });
+    }
+});
+</script>
+
+<?php require_once '../includes/footer.php'; ?>

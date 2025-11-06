@@ -49,21 +49,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['documento'])) {
     }
 
     try {
-        // Insertar en base de datos
+        // Insertar en base de datos (¡CORREGIDO!)
         $stmt = $pdo->prepare("
-            INSERT INTO documentos (id_usuario, id_seccion, nombre_original, nombre_guardado, tipo, fecha_subida)
-            VALUES (?, ?, ?, ?, ?, NOW())
-        ");
+        INSERT INTO documentos (id_usuario, id_seccion, nombre_original, nombre_guardado, tipo, fecha_subida, estado)
+        VALUES (?, ?, ?, ?, ?, NOW(), 'revisado')
+    ");
+        // Se añadió la columna 'estado' y el valor 'revisado'
         $stmt->execute([$usuario_id, $seccion_id, $nombre_original, $nombre_guardado, $tipo]);
+        // ... (resto del código)
 
         // Redirigir de vuelta a la sección
         header("Location: seccion_legajo.php?id=" . $seccion_id);
         exit;
-
     } catch (PDOException $e) {
         die("Error al guardar en la base de datos: " . $e->getMessage());
     }
-
 } else {
     die("Solicitud inválida.");
 }

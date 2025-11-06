@@ -40,20 +40,21 @@ try {
 </head>
 <body>
     <aside class="sidebar">
-        <div class="brand"><h2>Bienvenido</h2></div>
+        <div class="brand"><h2>Panel de Admin</h2></div>
         <div class="user-info">
             <img src="../img/user2.png" alt="Foto de <?= htmlspecialchars($usuario['nombre']) ?>">
             <h4><?= htmlspecialchars($usuario['nombre']); ?></h4>
             <p><?= htmlspecialchars(ucfirst($usuario['rol'])); ?></p>
         </div>
         <nav class="menu">
-            <a href="admin_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
-            <a href="mi_legajo.php" class="active"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-            <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
-            <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
-            <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
-            <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
-        </nav>
+      <a href="admin_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
+      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
+      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
+      <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
+      <a href="crear_usuario.php"><i class="fas fa-user-plus"></i> Crear Usuario</a>
+      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
+      <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
+    </nav>
     </aside>
 
     <div class="main">

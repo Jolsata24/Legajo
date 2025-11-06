@@ -11,7 +11,7 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
 $usuario_id = $_SESSION['id'];
 
 try {
-    // Datos del usuario con foto
+    // --- TU LÓGICA PHP (SIN CAMBIOS) ---
     $stmt = $pdo->prepare("
         SELECT u.nombre, u.email, u.rol, u.foto, a.nombre AS area
         FROM usuarios u
@@ -28,76 +28,77 @@ try {
     die("Error en la consulta: " . $e->getMessage());
 }
 
-$foto_usuario = "../img/user2.png";
-if (!empty($usuario['foto']) && file_exists("../uploads/usuarios/" . $usuario['foto'])) {
-    $foto_usuario = "../uploads/usuarios/" . htmlspecialchars($usuario['foto']);
-}
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Mi Legajo - Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <aside class="sidebar">
-    <div class="brand">
-      <h2>Panel de Admin</h2>
-    </div>
-    <div class="user-info">
-      <img src="<?= $foto_usuario; ?>" alt="Foto de usuario">
-      <h4><?= htmlspecialchars($usuario['nombre']); ?></h4>
-      <p><?= htmlspecialchars(ucfirst($usuario['rol'])); ?> </p>
-    </div>
-    <nav class="menu">
-      <a href="admin_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
-      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
-      <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
-      <a href="crear_usuario.php"><i class="fas fa-user-plus"></i> Crear Usuario</a>
-      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
-      <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
-    </nav>
-  </aside>
+// --- INICIO DE CORRECCIONES DE ESTILO ---
 
-  <div class="main">
+$page_title = "Mi Legajo";
+// 1. Incluimos los headers y sidebars correctos
+require_once '../includes/header_admin.php';
+require_once '../includes/sidebar_admin.php';
+?>
+
+<div class="main">
     <header class="topbar">
       <h1><i class="fas fa-folder-open"></i> Mi Legajo</h1>
       <div class="top-actions">
           <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+          <a href="../php/logout.php" class="topbar-logout-btn">
+              <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </a>
       </div>
     </header>
 
-    <section class="content">
+    <main class="content">
         <div class="card">
             <h3><i class="fas fa-user"></i> Mis Datos</h3>
-            <p><strong>Nombre:</strong> <?= htmlspecialchars($usuario['nombre']); ?></p>
-            <p><strong>Email:</strong> <?= htmlspecialchars($usuario['email']); ?></p>
-            <p><strong>Rol:</strong> <?= htmlspecialchars($usuario['rol']); ?></p>
-            <p><strong>Área:</strong> <?= htmlspecialchars($usuario['area'] ?? 'No asignada'); ?></p>
+            <p style="text-align: left;"><strong>Nombre:</strong> <?= htmlspecialchars($usuario['nombre']); ?></p>
+            <p style="text-align: left;"><strong>Email:</strong> <?= htmlspecialchars($usuario['email']); ?></p>
+            <p style="text-align: left;"><strong>Rol:</strong> <?= htmlspecialchars(ucfirst($usuario['rol'])); ?></p>
+            <p style="text-align: left;"><strong>Área:</strong> <?= htmlspecialchars($usuario['area'] ?? 'No asignada'); ?></p>
         </div>
 
         <div class="card">
-            <h3><i class="fas fa-folder"></i> Secciones de Mi Legajo</h3>
-            <p>Selecciona una sección para ver o subir tus documentos personales.</p>
-            <?php if (!empty($secciones)): ?>
-                <ul>
-                <?php foreach ($secciones as $sec): ?>
-                    <li>
-                        <a href="seccion_legajo_admin.php?id=<?= $sec['id']; ?>" style="display: block; padding: 10px; background: #f0f0f0; margin-bottom: 5px; text-decoration: none; color: #333; border-radius: 5px;">
-                            <i class="fas fa-chevron-right"></i> <?= htmlspecialchars($sec['nombre']); ?>
+            <h3><i class="fas fa-list-alt"></i> Secciones de Mi Legajo</h3>
+            <p style="text-align: left;">Selecciona una sección para ver o subir tus documentos personales.</p>
+            
+            <div class="seccion-list-wrapper">
+                <?php if (!empty($secciones)): ?>
+                    <?php foreach ($secciones as $sec): ?>
+                        <a href="seccion_legajo_admin.php?id=<?= $sec['id']; ?>" class="seccion-link">
+                            <i class="fas fa-chevron-right"></i> 
+                            <?= htmlspecialchars($sec['nombre']); ?>
                         </a>
-                    </li>
-                <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>No hay secciones definidas en el sistema.</p>
-            <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p>No hay secciones definidas en el sistema.</p>
+                <?php endif; ?>
+            </div>
         </div>
-    </section>
-  </div>
-</body>
-</html>
+    </main>
+</div>
+
+<style>
+    .seccion-link { 
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px; 
+        background-color: #f8f9fa; 
+        border: 1px solid var(--color-borde); 
+        margin-bottom: 10px; 
+        text-decoration: none; 
+        color: var(--color-texto-principal); 
+        border-radius: 8px; 
+        transition: all 0.2s ease;
+        font-weight: 500;
+    } 
+    .seccion-link:hover { 
+        background-color: #e9ecef;
+        border-color: #ced4da;
+        transform: translateY(-2px);
+    }
+    .seccion-link i {
+        color: var(--color-primario);
+    }
+</style>
+
+<?php require_once '../includes/footer.php'; ?>
