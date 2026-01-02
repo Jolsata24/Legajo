@@ -2,12 +2,13 @@
 session_start();
 require '../php/db.php';
 
-if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'secretaria') {
+if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$id_seccion = $_GET['id_seccion'] ?? null;
+// Recibimos AMBOS IDs
+$id_seccion  = $_GET['id_seccion'] ?? null;
 $id_empleado = $_GET['id_empleado'] ?? null;
 
 if (!$id_seccion || !$id_empleado) {
@@ -16,17 +17,17 @@ if (!$id_seccion || !$id_empleado) {
 }
 
 try {
-    // Info Sección
+    // 1. Info Sección
     $stmtSec = $pdo->prepare("SELECT nombre FROM secciones_legajo WHERE id = ?");
     $stmtSec->execute([$id_seccion]);
     $seccion = $stmtSec->fetch();
 
-    // Info Empleado (Para título y botón volver)
+    // 2. Info Empleado (Para el título)
     $stmtEmp = $pdo->prepare("SELECT nombre FROM usuarios WHERE id = ?");
     $stmtEmp->execute([$id_empleado]);
     $empleado = $stmtEmp->fetch();
 
-    // Documentos
+    // 3. Documentos del Empleado en esta Sección
     $stmtDocs = $pdo->prepare("
         SELECT * FROM documentos 
         WHERE id_usuario = ? AND id_seccion = ? 
@@ -39,21 +40,21 @@ try {
     die("Error: " . $e->getMessage());
 }
 
-$page_title = $seccion['nombre'] . " - " . $empleado['nombre'];
-// RECICLAJE: Mismo estilo que el visor del admin
+$page_title = "Documentos: " . $seccion['nombre'];
 $extra_css = "../style/ver_seccion_empleado.css";
 
-require_once '../includes/header_secretaria.php';
-require_once '../includes/sidebar_secretaria.php';
+require_once '../includes/header_admin.php';
+require_once '../includes/sidebar_admin.php';
 ?>
 
 <div class="main">
     
-    <header class="visor-header" style="border-left-color: #0dcaf0;"> <div class="visor-title">
+    <header class="visor-header">
+        <div class="visor-title">
             <h2>Carpeta: <?= htmlspecialchars($seccion['nombre']) ?></h2>
-            <span>Legajo de: <strong><?= htmlspecialchars($empleado['nombre']) ?></strong></span>
+            <span>Viendo legajo de: <strong><?= htmlspecialchars($empleado['nombre']) ?></strong></span>
         </div>
-        <a href="ver_empleado.php?id=<?= $id_empleado ?>" class="btn-secondary" style="text-decoration: none;">
+        <a href="ver_legajo_empleado.php?id=<?= $id_empleado ?>" class="btn-secondary" style="text-decoration: none;">
             <i class="fas fa-arrow-left"></i> Volver a Carpetas
         </a>
     </header>
@@ -64,7 +65,7 @@ require_once '../includes/sidebar_secretaria.php';
             <?php if (empty($documentos)): ?>
                 <div style="padding: 40px; text-align: center; color: #6c757d;">
                     <i class="fas fa-folder-open" style="font-size: 40px; opacity: 0.3; margin-bottom: 15px;"></i>
-                    <p>No hay documentos en esta carpeta.</p>
+                    <p>El empleado no tiene documentos en esta carpeta.</p>
                 </div>
             <?php else: ?>
                 <table class="doc-table">
@@ -80,12 +81,14 @@ require_once '../includes/sidebar_secretaria.php';
                     <tbody>
                         <?php foreach ($documentos as $doc): 
                              // Iconos
-                             $ext = strtolower(pathinfo($doc['nombre_guardado'], PATHINFO_EXTENSION));
-                             $icon = 'fa-file'; $color = '#6c757d';
+                             $ext = strtolower(pathinfo($doc['nombre_guardado'] ?? '', PATHINFO_EXTENSION));
+                             $icon = 'fa-file';
+                             $color = '#6c757d';
                              if($ext == 'pdf') { $icon='fa-file-pdf'; $color='#dc3545'; }
                              if(in_array($ext, ['doc','docx'])) { $icon='fa-file-word'; $color='#0d6efd'; }
                              if(in_array($ext, ['jpg','png'])) { $icon='fa-file-image'; $color='#198754'; }
 
+                             // Estado
                              $estado = strtolower($doc['estado'] ?? 'pendiente');
                              $badge = 'pendiente';
                              if($estado == 'validado') $badge = 'validado';
@@ -103,7 +106,7 @@ require_once '../includes/sidebar_secretaria.php';
                                 <a href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank" class="btn-download-sm">
                                     <i class="fas fa-eye"></i> Ver
                                 </a>
-                                </td>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

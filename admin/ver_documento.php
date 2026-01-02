@@ -2,188 +2,173 @@
 session_start();
 require '../php/db.php';
 
-if (!isset($_SESSION['id'])) {
-    header("Location: ../php/login.html");
+if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
+    header("Location: ../into/login.html");
     exit;
 }
 
-$usuario_id = $_SESSION['id'];
-$rol        = $_SESSION['rol'];
+$id_doc = $_GET['id'] ?? null;
+if (!$id_doc) die("Documento no especificado.");
 
-$doc_id = $_GET['id'] ?? null;
-if (!$doc_id) {
-    die("Documento no especificado.");
+// A. Procesar Cambio de Estado (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nuevo_estado = $_POST['estado'];
+    $observacion  = trim($_POST['observacion'] ?? '');
+    
+    // Actualizar documento
+    $stmtUpd = $pdo->prepare("UPDATE documentos SET estado = ?, observaciones = ? WHERE id = ?");
+    if ($stmtUpd->execute([$nuevo_estado, $observacion, $id_doc])) {
+        
+        // (Opcional) Crear notificación para el usuario
+        // ... Lógica de notificación aquí ...
+        
+        $mensaje_exito = "El documento ha sido actualizado a: " . strtoupper($nuevo_estado);
+    } else {
+        $mensaje_error = "Error al actualizar.";
+    }
 }
 
+// B. Obtener Datos del Documento + Usuario
 try {
-    $stmt = $pdo->prepare("
-        SELECT d.*, u.nombre AS empleado, a.nombre AS area_destino, r.nombre AS revisor
+    $sql = "
+        SELECT d.*, u.nombre as autor, u.email, u.rol, s.nombre as seccion
         FROM documentos d
-        INNER JOIN usuarios u ON d.id_usuario = u.id
-        LEFT JOIN areas a ON d.id_area_destino = a.id
-        LEFT JOIN usuarios r ON d.revisado_por = r.id
+        JOIN usuarios u ON d.id_usuario = u.id
+        LEFT JOIN secciones_legajo s ON d.id_seccion = s.id
         WHERE d.id = ?
-    ");
-    $stmt->execute([$doc_id]);
-    $doc = $stmt->fetch(PDO::FETCH_ASSOC);
+    ";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$id_doc]);
+    $doc = $stmt->fetch();
 
-    if (!$doc) {
-        die("Documento no encontrado.");
-    }
+    if (!$doc) die("Documento no encontrado.");
 
 } catch (PDOException $e) {
-    die("Error en la consulta: " . $e->getMessage());
+    die("Error: " . $e->getMessage());
 }
 
-// Guardar revisión (solo admin/rrhh/jefe_area)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'revision' && in_array($rol, ['admin', 'rrhh', 'jefe_area'])) {
-    $estado   = $_POST['estado'] ?? 'pendiente';
-    $feedback = $_POST['feedback'] ?? '';
+$page_title = "Revisión: " . $doc['nombre_original'];
+$extra_css = "../style/ver_documento.css";
 
-    $stmt = $pdo->prepare("
-        UPDATE documentos 
-        SET estado = ?, feedback = ?, revisado_por = ?, fecha_revision = NOW()
-        WHERE id = ?
-    ");
-    $stmt->execute([$estado, $feedback, $usuario_id, $doc_id]);
+require_once '../includes/header_admin.php';
+require_once '../includes/sidebar_admin.php';
 
-    header("Location: ver_documento.php?id=" . $doc_id);
-    exit;
-}
+// Preparar visor
+$ruta_archivo = "../uploads/" . $doc['nombre_guardado'];
+$ext = strtolower(pathinfo($doc['nombre_guardado'], PATHINFO_EXTENSION));
+$es_imagen = in_array($ext, ['jpg','jpeg','png','gif']);
+$es_pdf = ($ext === 'pdf');
 
-// Reemplazar documento (solo empleado dueño)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'reemplazo' && $rol === 'empleado' && $doc['id_usuario'] == $usuario_id) {
-    if (isset($_FILES['nuevo_doc']) && $_FILES['nuevo_doc']['error'] === UPLOAD_ERR_OK) {
-        $nombre_original = $_FILES['nuevo_doc']['name'];
-        $tmp_name = $_FILES['nuevo_doc']['tmp_name'];
-
-        // generar nombre único
-        $ext = pathinfo($nombre_original, PATHINFO_EXTENSION);
-        $nombre_guardado = uniqid("doc_") . "." . $ext;
-        $ruta_destino = "../uploads/" . $nombre_guardado;
-
-        if (move_uploaded_file($tmp_name, $ruta_destino)) {
-            // actualizar documento
-            $stmt = $pdo->prepare("
-                UPDATE documentos 
-                SET nombre_original = ?, nombre_guardado = ?, estado = 'pendiente', feedback = NULL, revisado_por = NULL, fecha_revision = NULL
-                WHERE id = ?
-            ");
-            $stmt->execute([$nombre_original, $nombre_guardado, $doc_id]);
-
-            header("Location: ver_documento.php?id=" . $doc_id);
-            exit;
-        } else {
-            echo "❌ Error al subir el nuevo archivo.";
-        }
-    }
-}
+// Clases de estado para visualización
+$estado_class = 'st-pendiente';
+if ($doc['estado'] == 'validado') $estado_class = 'st-validado';
+if ($doc['estado'] == 'rechazado') $estado_class = 'st-rechazado';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Documento - <?= htmlspecialchars($doc['nombre_original']); ?></title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="brand"><h2>Bienvenido</h2></div>
-    <div class="user-info">
-      <img src="<?= htmlspecialchars($_SESSION['foto'] ?? '../img/user2.png') ?>" alt="Foto Usuario">
-      <h4><?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario') ?></h4>
-    </div>
-    <nav class="menu">
-      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
-      <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
-      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
-      <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
-    </nav>
-  </aside>
 
-  <!-- Main -->
-  <div class="main">
-    <!-- Topbar -->
+<div class="main">
+    
     <header class="topbar">
-      <h1><i class="fas fa-file-alt"></i> Documento</h1>
-      <div class="top-actions">
-        
-        <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
-      </div>
-    </header>
-    <a href="panel_jefes.php" class="btn-back">
-          <i class="fas fa-arrow-left"></i> Atrás
-        </a>
-    <!-- Content -->
-    <main class="content">
-      <div class="card">
-        <div class="card-header">
-          <h2><i class="fas fa-file-alt"></i> <?= htmlspecialchars($doc['nombre_original']); ?></h2>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="javascript:history.back()" class="btn-back-circle">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Revisión de Documento</h1>
         </div>
-        <div class="card-body">
-  <p><span class="card-label">Empleado:</span> <span class="card-value"><?= htmlspecialchars($doc['empleado']); ?></span></p>
-  <p><span class="card-label">Área destino:</span> <span class="card-value"><?= htmlspecialchars($doc['area_destino'] ?? 'Personal'); ?></span></p>
-  <p><span class="card-label">Tipo:</span> <span class="card-value"><?= htmlspecialchars($doc['tipo']); ?></span></p>
-  <p><span class="card-label">Fecha subida:</span> <span class="card-value"><?= $doc['fecha_subida']; ?></span></p>
-  <p><span class="card-label">Estado:</span> <span class="card-value"><?= htmlspecialchars($doc['estado']); ?></span></p>
-  <p><span class="card-label">Revisado por:</span> <span class="card-value"><?= $doc['revisor'] ? htmlspecialchars($doc['revisor']) : 'No revisado aún'; ?></span></p>
-  <p><span class="card-label">Fecha revisión:</span> <span class="card-value"><?= $doc['fecha_revision'] ?? 'Pendiente'; ?></span></p>
-  <p><span class="card-label">Feedback:</span><br>
-     <span class="card-value"><?= nl2br(htmlspecialchars($doc['feedback'] ?? '')); ?></span>
-  </p>
-  
-  <p>
-    <a href="uploads/<?= $row['archivo']; ?>" target="_blank" class="btn-download">
-       Descargar Documento
-    </a>
-  </p>
+        <div class="top-actions">
+            <a href="<?= $ruta_archivo ?>" download="<?= $doc['nombre_original'] ?>" class="btn-secondary">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+        </div>
+    </header>
+
+    <main class="content">
+        
+        <?php if (isset($mensaje_exito)): ?>
+            <div style="background:#d1e7dd; color:#0f5132; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <i class="fas fa-check-circle"></i> <?= $mensaje_exito ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="doc-viewer-layout">
+            
+            <div class="viewer-container">
+                <?php if ($es_pdf): ?>
+                    <iframe src="<?= $ruta_archivo ?>" class="viewer-iframe"></iframe>
+                <?php elseif ($es_imagen): ?>
+                    <img src="<?= $ruta_archivo ?>" class="viewer-img" alt="Documento">
+                <?php else: ?>
+                    <div class="no-preview">
+                        <i class="fas fa-file-alt"></i>
+                        <p>Este archivo no tiene vista previa.</p>
+                        <a href="<?= $ruta_archivo ?>" class="btn-primary">Descargar para ver</a>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="controls-container">
+                
+                <div class="info-card">
+                    <div class="doc-meta-title">Detalles del Archivo</div>
+                    
+                    <div class="meta-row">
+                        <span class="meta-label">Nombre del Archivo</span>
+                        <span class="meta-value"><?= htmlspecialchars($doc['nombre_original']) ?></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Subido Por</span>
+                        <span class="meta-value">
+                            <i class="fas fa-user-circle"></i> <?= htmlspecialchars($doc['autor']) ?>
+                        </span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Sección / Carpeta</span>
+                        <span class="meta-value"><?= htmlspecialchars($doc['seccion'] ?? 'General') ?></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Fecha de Subida</span>
+                        <span class="meta-value"><?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])) ?></span>
+                    </div>
+                </div>
+
+                <div class="action-card">
+                    <div class="doc-meta-title">Validación</div>
+
+                    <div class="status-current <?= $estado_class ?>">
+                        Estado Actual: <?= ucfirst($doc['estado']) ?>
+                    </div>
+
+                    <form method="POST">
+                        <div class="form-group">
+                            <label>Observaciones (Opcional):</label>
+                            <textarea name="observacion" class="form-control" placeholder="Escribe un motivo si rechazas u observas..."><?= htmlspecialchars($doc['observaciones'] ?? '') ?></textarea>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button type="submit" name="estado" value="validado" class="btn-block btn-validate">
+                                <i class="fas fa-check"></i> Validar Documento
+                            </button>
+                            
+                            <button type="submit" name="estado" value="observado" class="btn-block btn-observe">
+                                <i class="fas fa-exclamation-triangle"></i> Observar
+                            </button>
+                            
+                            <button type="submit" name="estado" value="rechazado" class="btn-block btn-reject">
+                                <i class="fas fa-times"></i> Rechazar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div style="text-align: center; margin-top: 10px;">
+                    <a href="../php/eliminar_doc.php?id=<?= $doc['id'] ?>" onclick="return confirm('¿Borrar definitivamente?')" style="color: #dc3545; font-size: 13px; text-decoration: underline;">
+                        Eliminar este documento permanentemente
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
 </div>
 
-      </div>
-
-      <!-- Sección revisión (Admin/RRHH/Jefe) -->
-      <?php if (in_array($rol, ['admin'])): ?>
-        <div class="card">
-          <div class="card-header"><h3> Revisar Documento</h3></div>
-          <div class="card-body">
-            <form method="post" class="form-dashboard">
-              <input type="hidden" name="accion" value="revision">
-
-              <label for="estado">Estado:</label>
-              <select name="estado" id="estado" required>
-                <option value="pendiente" <?= $doc['estado']==='pendiente'?'selected':''; ?>>Pendiente</option>
-                <option value="rechazado" <?= $doc['estado']==='rechazado'?'selected':''; ?>>Rechazado</option>
-                <option value="observado" <?= $doc['estado']==='observado'?'selected':''; ?>>Observado</option>
-                <option value="revisado" <?= $doc['estado']==='revisado'?'selected':''; ?>>Revisado</option>
-              </select>
-
-              <label for="feedback">Feedback:</label>
-              <textarea name="feedback" id="feedback" rows="5"><?= htmlspecialchars($doc['feedback'] ?? ''); ?></textarea>
-
-              <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Guardar Revisión</button>
-            </form>
-          </div>
-        </div>
-      <?php endif; ?>
-
-      <!-- Sección reemplazo (Empleado dueño) -->
-      <?php if ($rol === 'empleado' && $doc['id_usuario'] == $usuario_id && in_array($doc['estado'], ['rechazado','observado'])): ?>
-        <div class="card">
-          <div class="card-header"><h3> Reemplazar Documento</h3></div>
-          <div class="card-body">
-            <form method="post" enctype="multipart/form-data" class="form-dashboard">
-              <input type="hidden" name="accion" value="reemplazo">
-              <input type="file" name="nuevo_doc" accept=".pdf,.doc,.docx,.jpg,.png" required>
-              <button type="submit" class="btn-warning"><i class="fas fa-upload"></i> Subir Reemplazo</button>
-            </form>
-          </div>
-        </div>
-      <?php endif; ?>
-    </main>
-  </div>
-</body>
-</html>
+<?php require_once '../includes/footer.php'; ?>

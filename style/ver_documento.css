@@ -1,0 +1,119 @@
+/* style/ver_documento.css */
+
+/* Layout Principal */
+.doc-viewer-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+  height: calc(100vh - 140px); /* Ocupar altura disponible */
+  min-height: 600px;
+}
+
+/* --- COLUMNA IZQUIERDA: VISOR --- */
+.viewer-container {
+  background: #333;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-tarjeta);
+}
+
+.viewer-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.viewer-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.no-preview {
+  color: #fff;
+  text-align: center;
+}
+.no-preview i { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
+
+/* --- COLUMNA DERECHA: CONTROLES --- */
+.controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+/* Tarjeta de Info */
+.info-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-tarjeta);
+}
+
+.doc-meta-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-texto-principal);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.meta-row {
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.meta-label { color: var(--color-texto-secundario); font-size: 12px; display: block; }
+.meta-value { color: var(--color-texto-principal); font-weight: 500; }
+
+/* Tarjeta de Acciones (Validación) */
+.action-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-tarjeta);
+  border-top: 4px solid var(--color-primario);
+}
+
+.status-current {
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+.st-validado { background: #d1e7dd; color: #0f5132; }
+.st-pendiente { background: #fff3cd; color: #664d03; }
+.st-rechazado { background: #f8d7da; color: #842029; }
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; }
+textarea.form-control { resize: vertical; min-height: 80px; }
+
+.btn-block { width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-bottom: 10px; color: #fff;}
+
+.btn-validate { background-color: #198754; }
+.btn-validate:hover { background-color: #157347; }
+
+.btn-reject { background-color: #dc3545; }
+.btn-reject:hover { background-color: #bb2d3b; }
+
+.btn-observe { background-color: #ffc107; color: #000; }
+.btn-observe:hover { background-color: #ffca2c; }
+
+/* Responsive */
+@media (max-width: 992px) {
+  .doc-viewer-layout { grid-template-columns: 1fr; height: auto; }
+  .viewer-container { height: 500px; }
+}

@@ -2,7 +2,7 @@
 session_start();
 require '../php/db.php';
 
-// Verificar sesión de Admin
+// 1. Verificar sesión
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../php/login.html");
     exit;
@@ -11,7 +11,7 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
 $usuario_id = $_SESSION['id'];
 
 try {
-    // --- TU LÓGICA PHP (SIN CAMBIOS) ---
+    // 2. CORRECCIÓN: Eliminamos "u.dni" de la consulta porque no existe en tu tabla usuarios
     $stmt = $pdo->prepare("
         SELECT u.nombre, u.email, u.rol, u.foto, a.nombre AS area
         FROM usuarios u
@@ -21,17 +21,21 @@ try {
     $stmt->execute([$usuario_id]);
     $usuario = $stmt->fetch();
 
-    // Traer las secciones del legajo
+    // 3. Obtener las SECCIONES (Carpetas)
     $secciones = $pdo->query("SELECT id, nombre FROM secciones_legajo ORDER BY nombre ASC")->fetchAll();
+
+    // Imagen por defecto si no tiene
+    // Aseguramos que la ruta sea correcta dependiendo de dónde guardes las fotos
+    $foto_perfil = !empty($usuario['foto']) ? "../uploads/usuarios/" . $usuario['foto'] : "../img/user.png";
 
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
 
-// --- INICIO DE CORRECCIONES DE ESTILO ---
+$page_title = "Mi Legajo Digital";
+// Cargamos el CSS de Mi Legajo
+$extra_css = "../style/mi_legajo.css";
 
-$page_title = "Mi Legajo";
-// 1. Incluimos los headers y sidebars correctos
 require_once '../includes/header_admin.php';
 require_once '../includes/sidebar_admin.php';
 ?>
@@ -48,57 +52,56 @@ require_once '../includes/sidebar_admin.php';
     </header>
 
     <main class="content">
-        <div class="card">
-            <h3><i class="fas fa-user"></i> Mis Datos</h3>
-            <p style="text-align: left;"><strong>Nombre:</strong> <?= htmlspecialchars($usuario['nombre']); ?></p>
-            <p style="text-align: left;"><strong>Email:</strong> <?= htmlspecialchars($usuario['email']); ?></p>
-            <p style="text-align: left;"><strong>Rol:</strong> <?= htmlspecialchars(ucfirst($usuario['rol'])); ?></p>
-            <p style="text-align: left;"><strong>Área:</strong> <?= htmlspecialchars($usuario['area'] ?? 'No asignada'); ?></p>
-        </div>
-
-        <div class="card">
-            <h3><i class="fas fa-list-alt"></i> Secciones de Mi Legajo</h3>
-            <p style="text-align: left;">Selecciona una sección para ver o subir tus documentos personales.</p>
-            
-            <div class="seccion-list-wrapper">
-                <?php if (!empty($secciones)): ?>
-                    <?php foreach ($secciones as $sec): ?>
-                        <a href="seccion_legajo_admin.php?id=<?= $sec['id']; ?>" class="seccion-link">
-                            <i class="fas fa-chevron-right"></i> 
-                            <?= htmlspecialchars($sec['nombre']); ?>
-                        </a>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p>No hay secciones definidas en el sistema.</p>
-                <?php endif; ?>
+        
+        <div class="profile-card">
+            <div class="profile-avatar">
+                <img src="<?= htmlspecialchars($foto_perfil) ?>" alt="Foto de Perfil">
+            </div>
+            <div class="profile-info">
+                <h2><?= htmlspecialchars($usuario['nombre']) ?></h2>
+                <p><i class="fas fa-briefcase"></i> <strong>Área:</strong> <?= htmlspecialchars($usuario['area'] ?? 'Sin asignar') ?></p>
+                <p><i class="fas fa-envelope"></i> <strong>Email:</strong> <?= htmlspecialchars($usuario['email']) ?></p>
+                <p><i class="fas fa-user-tag"></i> <strong>Rol:</strong> <?= ucfirst($usuario['rol']) ?></p>
             </div>
         </div>
+
+        <div>
+            <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--color-texto-principal);">
+                <i class="fas fa-layer-group"></i> Carpetas de Documentos
+            </h3>
+            
+            <?php if (empty($secciones)): ?>
+                <div class="card" style="text-align: center; color: var(--color-texto-secundario); padding: 30px;">
+                    <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>No hay secciones definidas en el sistema.</p>
+                </div>
+            <?php else: ?>
+                
+                <div class="sections-grid">
+                    <?php foreach ($secciones as $sec): ?>
+                        <a href="seccion_legajo_admin.php?id=<?= $sec['id']; ?>" class="section-card">
+                            
+                            <div class="section-icon">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            
+                            <div class="section-info">
+                                <h3><?= htmlspecialchars($sec['nombre']); ?></h3>
+                                <p>Ver documentos</p>
+                            </div>
+                            
+                            <div class="section-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+
+            <?php endif; ?>
+        </div>
+
     </main>
 </div>
-
-<style>
-    .seccion-link { 
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 16px; 
-        background-color: #f8f9fa; 
-        border: 1px solid var(--color-borde); 
-        margin-bottom: 10px; 
-        text-decoration: none; 
-        color: var(--color-texto-principal); 
-        border-radius: 8px; 
-        transition: all 0.2s ease;
-        font-weight: 500;
-    } 
-    .seccion-link:hover { 
-        background-color: #e9ecef;
-        border-color: #ced4da;
-        transform: translateY(-2px);
-    }
-    .seccion-link i {
-        color: var(--color-primario);
-    }
-</style>
 
 <?php require_once '../includes/footer.php'; ?>

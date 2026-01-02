@@ -1,0 +1,208 @@
+/* style/empleados_panel.css */
+
+/* --- 1. Barra de Control (Buscador y Botón) --- */
+.control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.search-wrapper {
+  flex: 1;
+  max-width: 450px;
+  position: relative;
+}
+
+.search-wrapper input {
+  width: 100%;
+  padding: 12px 15px 12px 45px;
+  border-radius: 50px; /* Bordes muy redondeados */
+  border: 1px solid var(--color-borde);
+  background-color: #fff;
+  font-size: 14px;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.search-wrapper input:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.search-wrapper i {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-secundario);
+}
+
+/* --- 2. Grilla de Empleados --- */
+.employee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  padding-bottom: 20px;
+}
+
+/* --- 3. Tarjeta de Empleado --- */
+.employee-card {
+  background: var(--color-fondo-tarjeta);
+  border-radius: 16px;
+  border: 1px solid var(--color-borde);
+  padding: 0; /* Quitamos padding contenedor para manejarlo dentro */
+  box-shadow: var(--sombra-tarjeta);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.employee-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+  border-color: #b6d4fe;
+}
+
+/* Cabecera de Color (Fondo detrás de la foto) */
+.card-banner {
+  height: 80px;
+  background: linear-gradient(135deg, var(--color-primario), var(--color-info));
+  position: relative;
+}
+
+/* Menú de 3 puntos (Opcional para futuras acciones rápidas) */
+.card-options {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+}
+
+/* Contenido Principal */
+.card-body {
+  padding: 0 20px 20px 20px;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Foto de Perfil */
+.avatar-container {
+  margin-top: -40px; /* Sube la foto sobre el banner */
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.avatar-container img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background: #fff;
+}
+
+/* Indicador de Estado (Puntito verde/rojo) */
+.status-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+.status-active { background-color: var(--color-exito); }
+.status-inactive { background-color: var(--color-secundario); }
+
+/* Textos */
+.emp-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-texto-principal);
+  margin-bottom: 4px;
+}
+
+.emp-role {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primario);
+  font-weight: 600;
+  margin-bottom: 12px;
+  background: rgba(13, 110, 253, 0.08);
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
+.emp-info {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center; /* Centrar info */
+}
+.emp-info i { color: #adb5bd; font-size: 14px; }
+
+/* Pie de Tarjeta (Botones) */
+.card-footer {
+  padding: 15px 20px;
+  background-color: #fcfcfc;
+  border-top: 1px solid var(--color-borde);
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-icon-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secundario);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-icon-action:hover {
+  background: var(--color-primario);
+  color: #fff;
+  border-color: var(--color-primario);
+}
+
+.btn-icon-action.delete:hover {
+  background: var(--color-peligro);
+  border-color: var(--color-peligro);
+}
+
+/* Empty State */
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: var(--color-texto-secundario);
+  display: none; /* Se activa con JS */
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .control-bar { flex-direction: column; align-items: stretch; }
+  .employee-grid { grid-template-columns: 1fr; }
+}

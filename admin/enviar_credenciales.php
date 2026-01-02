@@ -1,63 +1,85 @@
 <?php
-session_start();
-require '../php/db.php';
-require '../vendor/autoload.php';
-
+// admin/enviar_credenciales.php
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+require '../vendor/autoload.php';
+require '../php/db.php';
+
+session_start();
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
-    die("Acceso denegado.");
+    die("Acceso denegado");
 }
 
-$nombre_pdf = $_GET['pdf'] ?? null;
-$email_destino = $_GET['email'] ?? null;
-$ruta_pdf = '../uploads/credenciales/' . $nombre_pdf;
+$id_usuario = $_GET['id'] ?? 0;
+// La clave viene en plano (solo justo después de crear) o vacía si es reenvío (en cuyo caso no podemos enviarla, solo avisar)
+$clave_texto = $_GET['clave'] ?? null; 
 
-if (!$nombre_pdf || !$email_destino || !file_exists($ruta_pdf)) {
-    die("Error: Faltan datos o el archivo PDF no se encuentra.");
-}
+if (!$id_usuario) die("Falta ID");
+
+// Obtener datos usuario
+$stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = ?");
+$stmt->execute([$id_usuario]);
+$user = $stmt->fetch();
+
+if (!$user) die("Usuario no encontrado");
 
 $mail = new PHPMailer(true);
-try {
-    // Configuración del servidor (la misma que usaste para recuperar contraseña)
-    $mail->isSMTP();
-    $mail->Host = 'smtp.gmail.com';
-    $mail->SMTPAuth = true;
-    $mail->Username = 'jolsata24@gmail.com';
-    $mail->Password = 'vahm udlb ajvt crld';
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = 587;
 
-    // Contenido del correo
-    $mail->setFrom('no-reply@legajo.com', 'Sistema de Legajos DREMH');
-    $mail->addAddress($email_destino);
+try {
+    // --- CONFIGURACIÓN DEL SERVIDOR SMTP ---
+    // (Asegúrate de llenar esto con tus datos reales)
+    $mail->isSMTP();
+    $mail->Host       = 'smtp.gmail.com'; 
+    $mail->SMTPAuth   = true;
+    $mail->Username   = 'tu_correo@gmail.com'; // <--- PON TU CORREO
+    $mail->Password   = 'tu_contraseña_aplicacion'; // <--- PON TU CLAVE APP
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port       = 587;
+
+    // --- REMITENTE Y DESTINATARIO ---
+    $mail->setFrom('sistema@dremh.gob.pe', 'Sistemas DREMH');
+    $mail->addAddress($user['email'], $user['nombre']);
+
+    // --- CONTENIDO ---
     $mail->isHTML(true);
-    $mail->Subject = 'Bienvenido al Sistema de Legajos';
-    $mail->Body    = 'Hola,<br><br>Se ha creado una cuenta para ti. Adjunto encontrarás un documento PDF con tus credenciales de acceso.<br><br>Saludos.';
+    $mail->Subject = 'Bienvenido al Sistema de Legajos DREMH';
     
-    // ¡Adjuntar el PDF!
-    $mail->addAttachment($ruta_pdf);
+    // Cuerpo del correo
+    $body = "
+    <h2>Bienvenido/a {$user['nombre']}</h2>
+    <p>Se ha creado su cuenta en el sistema de legajos.</p>
+    <p><strong>Usuario:</strong> {$user['email']}</p>";
+    
+    if ($clave_texto) {
+        $body .= "<p><strong>Contraseña:</strong> {$clave_texto}</p>";
+        $body .= "<p><em>Por favor cambie su contraseña al ingresar.</em></p>";
+    } else {
+        $body .= "<p><em>Si olvidó su contraseña, use la opción 'Recuperar Contraseña' en el login.</em></p>";
+    }
+    
+    $body .= "<p><a href='http://tuservidor.com/into/login.html'>Ingresar al Sistema</a></p>";
+
+    $mail->Body = $body;
 
     $mail->send();
-
-    // Borrar el PDF temporal después de enviarlo
-    unlink($ruta_pdf);
-
-    echo "
-    <link rel='stylesheet' href='../style/dashboard.css'>
-    <div class='main' style='margin-left: 20px;'>
-        <div class='card'>
-            <h3>🚀 Correo Enviado Exitosamente</h3>
-            <p>Las credenciales han sido enviadas a <strong>".htmlspecialchars($email_destino)."</strong>.</p>
-            <br>
-            <a href='crear_usuario.php'>Crear otro usuario</a> | <a href='admin_dashboard.php'>Volver al Inicio</a>
-        </div>
-    </div>
-    ";
+    
+    // REDIRECCIÓN INTELIGENTE
+    // Si venimos de crear usuario, volvemos a la pantalla de éxito
+    if(isset($_GET['ref']) && $_GET['ref'] == 'exito') {
+        echo "<script>
+            alert('Correo enviado correctamente a {$user['email']}');
+            window.location.href = 'crear_usuario_exito.php?id={$id_usuario}&clave=" . urlencode($clave_texto) . "';
+        </script>";
+    } else {
+        // Si venimos del panel de empleados
+        echo "<script>
+            alert('Correo enviado correctamente.');
+            window.location.href = 'empleados_panel.php';
+        </script>";
+    }
 
 } catch (Exception $e) {
-    echo "El mensaje no pudo ser enviado. Mailer Error: {$mail->ErrorInfo}";
+    echo "Error al enviar el correo: {$mail->ErrorInfo}";
 }
-
 ?>

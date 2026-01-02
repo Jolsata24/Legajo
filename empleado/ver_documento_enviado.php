@@ -2,126 +2,170 @@
 session_start();
 require '../php/db.php';
 
+// Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$id_documento = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$id_usuario = (int)$_SESSION['id'];
-
-if ($id_documento <= 0) {
-    die("Documento no especificado.");
-}
+$id_doc = $_GET['id'] ?? null;
+if (!$id_doc) header("Location: empleado_dashboard.php");
 
 try {
-    // 1. Obtener los detalles del documento, incluyendo el nombre del revisor
-    $stmt_doc = $pdo->prepare(
-        "SELECT d.*, a.nombre AS area_destino_nombre, r.nombre AS nombre_revisor
-         FROM documentos d
-         LEFT JOIN areas a ON d.id_area_destino = a.id
-         LEFT JOIN usuarios r ON d.revisado_por = r.id
-         WHERE d.id = ? AND d.id_usuario = ?"
-    );
-    $stmt_doc->execute([$id_documento, $id_usuario]);
-    $documento = $stmt_doc->fetch();
+    // 1. Datos del Documento
+    $sql = "SELECT d.*, s.nombre as seccion, a.nombre as area_destino 
+            FROM documentos d
+            LEFT JOIN secciones_legajo s ON d.id_seccion = s.id
+            LEFT JOIN areas a ON d.id_area_destino = a.id
+            WHERE d.id = ? AND d.id_usuario = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$id_doc, $_SESSION['id']]);
+    $doc = $stmt->fetch();
 
-    if (!$documento) {
-        die("Documento no encontrado o no tienes permiso para verlo.");
-    }
+    if (!$doc) die("Acceso denegado o documento no encontrado.");
 
-    // 2. Obtener el historial de trazabilidad (como ya lo teníamos)
-    $stmt_historial = $pdo->prepare(
-        "SELECT h.*, u.nombre AS nombre_usuario_accion
-         FROM documentos_historial h
-         LEFT JOIN usuarios u ON h.id_usuario_accion = u.id
-         WHERE h.id_documento = ?
-         ORDER BY h.fecha DESC"
-    );
-    $stmt_historial->execute([$id_documento]);
-    $historial = $stmt_historial->fetchAll();
+    // 2. TRAZABILIDAD (Historial) - CORREGIDO
+    // Se cambió 'h.fecha_accion' por 'h.fecha'
+    $stmtHist = $pdo->prepare("
+        SELECT h.*, u.nombre as actor 
+        FROM documentos_historial h
+        LEFT JOIN usuarios u ON h.id_usuario_accion = u.id
+        WHERE h.id_documento = ? 
+        ORDER BY h.fecha DESC 
+    ");
+    $stmtHist->execute([$id_doc]);
+    $historial = $stmtHist->fetchAll();
 
 } catch (PDOException $e) {
-    die("Error en la consulta: " . $e->getMessage());
+    die("Error: " . $e->getMessage());
 }
 
-$page_title = "Detalle del Documento";
+$page_title = "Detalle: " . $doc['nombre_original'];
+$extra_css = "../style/ver_documento.css";
+
 require_once '../includes/header_empleado.php';
 require_once '../includes/sidebar_empleado.php';
+
+$ruta_archivo = "../uploads/" . $doc['nombre_guardado'];
+$ext = strtolower(pathinfo($doc['nombre_guardado'], PATHINFO_EXTENSION));
+$st_lower = strtolower($doc['estado']);
+
+// Colores
+$estado_class = 'st-pendiente';
+if ($st_lower === 'aprobado') $estado_class = 'st-validado';
+if ($st_lower === 'rechazado') $estado_class = 'st-rechazado';
 ?>
-<style>
-    .timeline { list-style: none; padding: 20px 0; }
-    .timeline li { margin-bottom: 20px; border-left: 2px solid #007bff; padding-left: 20px; position: relative; }
-    .timeline li::before { content: ''; width: 12px; height: 12px; background: #007bff; border-radius: 50%; position: absolute; left: -7px; top: 5px; }
-    .locked { background-color: #f8f9fa; color: #6c757d; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #dee2e6; }
-    .feedback-box { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-top: 15px; }
-    .form-dashboard label { display: block; margin: 15px 0 5px; font-weight: 600; }
-    .form-dashboard input[type="file"] { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-    .btn-warning { background-color: #ffc107; border: none; padding: 10px 20px; color: #212529; cursor: pointer; border-radius: 5px; font-weight: 600; margin-top: 15px; }
-</style>
 
 <div class="main">
     <header class="topbar">
-        <h1><i class="fas fa-file-alt"></i> Detalle del Documento Enviado</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="empleado_dashboard.php" class="btn-back-circle"><i class="fas fa-arrow-left"></i></a>
+            <h1>Seguimiento de Documento</h1>
+        </div>
     </header>
 
     <main class="content">
-        <a href="documentos_enviados.php" style="text-decoration:none; color: #333; margin-bottom: 20px; display: inline-block;">
-            <i class="fas fa-arrow-left"></i> Volver a Mis Envíos
-        </a>
         
-        <div class="card">
-            <h3><i class="fas fa-info-circle"></i> Información del Documento</h3>
-            <p style="text-align:left;"><strong>Nombre del archivo:</strong> <?= htmlspecialchars($documento['nombre_original']) ?></p>
-            <p style="text-align:left;"><strong>Estado Actual:</strong> <span style="font-weight:bold; color: #007bff;"><?= strtoupper(htmlspecialchars($documento['estado'])) ?></span></p>
-            <p style="text-align:left;"><strong>Área de Destino:</strong> <?= htmlspecialchars($documento['area_destino_nombre'] ?? 'Pendiente de asignación') ?></p>
-            <p style="text-align:left;"><strong>Fecha de Última Revisión:</strong> <?= $documento['fecha_revision'] ?? 'N/A' ?></p>
-            <p style="text-align:left;"><strong>Revisado por:</strong> <?= htmlspecialchars($documento['nombre_revisor'] ?? 'N/A') ?></p>
+        <?php if(isset($_GET['msg']) && $_GET['msg']=='reemplazado'): ?>
+            <div style="background:#d1e7dd; color:#0f5132; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <i class="fas fa-check-circle"></i> ¡Corrección enviada correctamente! El documento está pendiente de revisión.
+            </div>
+        <?php endif; ?>
+
+        <div class="doc-viewer-layout">
             
-            <?php if (!empty($documento['feedback'])): ?>
-                <div class="feedback-box">
-                    <strong>Feedback del revisor:</strong>
-                    <p style="margin-top: 5px;"><?= nl2br(htmlspecialchars($documento['feedback'])) ?></p>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <div class="card">
-            <h3><i class="fas fa-upload"></i> Reemplazar Documento</h3>
-            <?php if ($documento['estado'] === 'revisado'): ?>
-                <div class="locked">
-                    <p><i class="fas fa-lock"></i> Este documento ya ha sido revisado y aprobado. No se puede modificar.</p>
-                </div>
-            <?php else: ?>
-                <p style="text-align:left;">Si tu documento fue observado o rechazado, puedes subir una nueva versión aquí. El archivo anterior será reemplazado.</p>
-                <form action="reemplazar_documento.php" method="post" enctype="multipart/form-data" class="form-dashboard">
-                    <input type="hidden" name="id_documento" value="<?= $id_documento ?>">
-                    <div>
-                        <label for="nuevo_documento">Seleccionar nuevo archivo:</label>
-                        <input type="file" name="nuevo_documento" id="nuevo_documento" required>
-                    </div>
-                    <button type="submit" class="btn-warning">Reemplazar y Enviar a Revisión</button>
-                </form>
-            <?php endif; ?>
-        </div>
-
-        <div class="card">
-            <h3><i class="fas fa-history"></i> Historial de Trazabilidad</h3>
-            <ul class="timeline">
-                <?php if (empty($historial)): ?>
-                    <li>No hay eventos en el historial de este documento.</li>
+            <div class="viewer-container">
+                <?php if ($ext === 'pdf'): ?>
+                    <iframe src="<?= $ruta_archivo ?>" class="viewer-iframe"></iframe>
+                <?php elseif (in_array($ext, ['jpg', 'jpeg', 'png'])): ?>
+                    <img src="<?= $ruta_archivo ?>" class="viewer-img">
                 <?php else: ?>
-                    <?php foreach ($historial as $evento): ?>
-                        <li>
-                            <div class="accion"><?= htmlspecialchars($evento['accion']) ?></div>
-                            <div class="descripcion"><?= htmlspecialchars($evento['descripcion']) ?></div>
-                            <div class="fecha">
-                                Por: <strong><?= htmlspecialchars($evento['nombre_usuario_accion'] ?? 'Sistema') ?></strong> el <?= date("d/m/Y H:i", strtotime($evento['fecha'])) ?>
-                            </div>
-                        </li>
-                    <?php endforeach; ?>
+                    <div class="no-preview">
+                        <i class="fas fa-file-alt"></i>
+                        <p>Vista previa no disponible.</p>
+                        <a href="<?= $ruta_archivo ?>" class="btn-primary">Descargar</a>
+                    </div>
                 <?php endif; ?>
-            </ul>
+            </div>
+
+            <div class="controls-container">
+                
+                <div class="info-card">
+                    <div class="doc-meta-title">Datos</div>
+                    <div class="meta-row"><span class="meta-label">Archivo:</span> <?= htmlspecialchars($doc['nombre_original']) ?></div>
+                    <div class="meta-row"><span class="meta-label">Carpeta:</span> <?= htmlspecialchars($doc['seccion']) ?></div>
+                    
+                    <?php if (!empty($doc['area_destino'])): ?>
+                    <div class="meta-row"><span class="meta-label">Destino:</span> <strong><?= htmlspecialchars($doc['area_destino']) ?></strong></div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="action-card" style="border-top-color: var(--color-primario);">
+                    <div class="doc-meta-title">Estado Actual</div>
+                    
+                    <div class="status-current <?= $estado_class ?>">
+                        <?= ucfirst($doc['estado']) ?>
+                    </div>
+
+                    <?php if (!empty($doc['feedback'])): ?>
+                        <div style="background: #fff3cd; color: #664d03; padding: 15px; border-radius: 8px; font-size: 14px; border-left: 4px solid #ffc107;">
+                            <strong><i class="fas fa-comment"></i> Motivo / Observación:</strong><br>
+                            <?= nl2br(htmlspecialchars($doc['feedback'])) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($st_lower === 'rechazado' || $st_lower === 'observado'): ?>
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+                        
+                        <h4 style="font-size: 14px; margin-bottom: 10px; color: #333;">
+                            <i class="fas fa-sync-alt"></i> Subir Corrección
+                        </h4>
+                        
+                        <form action="reemplazar_doc.php" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="id_documento" value="<?= $doc['id'] ?>">
+                            
+                            <div class="form-group">
+                                <label style="font-size: 12px; color: #666;">Selecciona el archivo corregido:</label>
+                                <input type="file" name="nuevo_documento" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.png">
+                            </div>
+
+                            <button type="submit" class="btn-block" style="background: var(--color-primario); color: white;">
+                                Reemplazar y Enviar
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+
+                <div class="info-card" style="margin-top: 20px;">
+                    <div class="doc-meta-title"><i class="fas fa-history"></i> Historial de Acciones</div>
+                    
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <?php if(empty($historial)): ?>
+                            <p style="font-size: 12px; color: #999;">Sin historial registrado.</p>
+                        <?php else: ?>
+                            <ul style="list-style: none; padding: 0; margin: 0;">
+                                <?php foreach($historial as $h): ?>
+                                    <li style="border-bottom: 1px solid #f0f0f0; padding: 10px 0;">
+                                        <small style="display: block; color: #999; font-size: 11px;">
+                                            <?= date("d/m/Y H:i", strtotime($h['fecha'])) ?>
+                                        </small>
+                                        <div style="font-size: 13px; font-weight: 500; color: #333;">
+                                            <?= htmlspecialchars($h['accion']) ?>
+                                        </div>
+                                        <div style="font-size: 12px; color: #666;">
+                                            <?= htmlspecialchars($h['descripcion']) ?>
+                                        </div>
+                                        <small style="color: var(--color-primario);">
+                                            Por: <?= htmlspecialchars($h['actor']) ?>
+                                        </small>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </main>
 </div>

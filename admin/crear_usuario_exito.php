@@ -7,50 +7,79 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     exit;
 }
 
-$id_nuevo_usuario = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$clave_temporal = isset($_GET['clave']) ? $_GET['clave'] : '';
+$id_nuevo = $_GET['id'] ?? 0;
+$pass_temp = $_GET['pass'] ?? '';
 
-if ($id_nuevo_usuario <= 0) {
-    die("No se encontró el usuario.");
+if (!$id_nuevo) {
+    header("Location: crear_usuario.php");
+    exit;
 }
 
-// Obtenemos los datos completos del usuario recién creado
+// Obtener datos para mostrar
 try {
-    $stmt = $pdo->prepare("SELECT u.nombre, u.email, u.rol, a.nombre as area_nombre FROM usuarios u LEFT JOIN areas a ON u.id_area = a.id WHERE u.id = ?");
-    $stmt->execute([$id_nuevo_usuario]);
+    $stmt = $pdo->prepare("
+        SELECT u.nombre, u.email, u.rol, a.nombre as area 
+        FROM usuarios u 
+        LEFT JOIN areas a ON u.id_area = a.id 
+        WHERE u.id = ?
+    ");
+    $stmt->execute([$id_nuevo]);
     $usuario = $stmt->fetch();
-} catch (PDOException $e) {
-    die("Error al buscar el usuario.");
+} catch (Exception $e) {
+    die("Error al consultar usuario.");
 }
 
-$page_title = "Usuario Creado con Éxito";
+$page_title = "¡Usuario Creado!";
+$extra_css = "../style/exito.css";
+
 require_once '../includes/header_admin.php';
 require_once '../includes/sidebar_admin.php';
 ?>
 
 <div class="main">
-    <header class="topbar">
-      <h1><i class="fas fa-check-circle"></i> Usuario Creado Exitosamente</h1>
-    </header>
-
-    <main class="content">
-        <div class="card">
-            <h3>Detalles del Nuevo Usuario</h3>
-            <p style="text-align:left;"><strong>Nombre:</strong> <?= htmlspecialchars($usuario['nombre']) ?></p>
-            <p style="text-align:left;"><strong>Usuario (Email):</strong> <?= htmlspecialchars($usuario['email']) ?></p>
-            <p style="text-align:left;"><strong>Contraseña Temporal:</strong> <?= htmlspecialchars($clave_temporal) ?></p>
-            <p style="text-align:left;"><strong>Rol:</strong> <?= htmlspecialchars($usuario['rol']) ?></p>
-            <p style="text-align:left;"><strong>Área:</strong> <?= htmlspecialchars($usuario['area_nombre'] ?? 'No asignada') ?></p>
-            <hr>
-            <p>Puedes generar un documento PDF con estas credenciales para entregarlo al nuevo usuario.</p>
+    <div class="success-container">
+        
+        <div class="success-card">
+            <div class="icon-circle">
+                <i class="fas fa-check"></i>
+            </div>
             
-            <a href="generar_credenciales_pdf.php?id=<?= $id_nuevo_usuario ?>&clave=<?= urlencode($clave_temporal) ?>" class="btn-primary" style="background-color: #dc3545; text-decoration: none; display: inline-block;">
-                <i class="fas fa-file-pdf"></i> Generar y Descargar PDF
-            </a>
-            <br><br>
-            <a href="crear_usuario.php">Crear otro usuario</a> | <a href="admin_dashboard.php">Volver al Inicio</a>
+            <h2>¡Usuario Registrado!</h2>
+            <p>El usuario ha sido creado correctamente en el sistema. Aquí tienes las credenciales temporales.</p>
+            
+            <div class="credentials-box">
+                <div class="credential-item">
+                    <span class="credential-label">Nombre:</span>
+                    <span class="credential-value"><?= htmlspecialchars($usuario['nombre']) ?></span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Usuario:</span>
+                    <span class="credential-value"><?= htmlspecialchars($usuario['email']) ?></span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Contraseña:</span>
+                    <span class="credential-value"><?= htmlspecialchars($pass_temp) ?></span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Área:</span>
+                    <span class="credential-value" style="font-weight: 400;"><?= htmlspecialchars($usuario['area'] ?? 'General') ?></span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="generar_credenciales_pdf.php?id=<?= $id_nuevo ?>&pass=<?= urlencode($pass_temp) ?>" class="btn-pdf">
+                    <i class="fas fa-file-pdf"></i> Descargar Ficha de Acceso
+                </a>
+
+                <div style="margin-top: 10px;">
+                    <a href="crear_usuario.php" class="btn-link">Registrar otro usuario</a>
+                    <span style="color: #ccc;">|</span>
+                    <a href="empleados_panel.php" class="btn-link">Ir al directorio</a>
+                </div>
+            </div>
         </div>
-    </main>
+
+    </div>
 </div>
 
 <?php require_once '../includes/footer.php'; ?>

@@ -1,0 +1,122 @@
+/* style/subir_documento.css */
+
+/* Contenedor Centrado */
+.upload-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.upload-card {
+  background: var(--color-fondo-tarjeta);
+  border-radius: 16px;
+  box-shadow: var(--sombra-tarjeta);
+  border: 1px solid var(--color-borde);
+  padding: 40px;
+  text-align: center;
+}
+
+/* Cabecera de la Tarjeta */
+.upload-header {
+  margin-bottom: 30px;
+}
+.upload-icon-circle {
+  width: 70px;
+  height: 70px;
+  background-color: rgba(13, 110, 253, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  color: var(--color-primario);
+  font-size: 32px;
+}
+.upload-header h2 { margin: 0; font-size: 22px; color: var(--color-texto-principal); }
+.upload-header p { color: var(--color-texto-secundario); font-size: 14px; margin-top: 5px; }
+
+/* --- ZONA DE DRAG & DROP --- */
+.drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 40px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  position: relative;
+  margin-bottom: 25px;
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--color-primario);
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.drop-zone-content {
+  pointer-events: none; /* Para que los clicks pasen al input */
+}
+
+.drop-zone i { font-size: 40px; color: #adb5bd; margin-bottom: 15px; display: block; }
+.drop-zone-text { font-weight: 600; color: #495057; display: block; margin-bottom: 5px; }
+.drop-zone-hint { font-size: 12px; color: #999; }
+
+/* Input file oculto pero funcional */
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Previsualización del Archivo Seleccionado */
+.file-preview {
+  display: none; /* Oculto por defecto */
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 25px;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+}
+.file-preview.active { display: flex; }
+
+.preview-icon { font-size: 24px; color: var(--color-primario); }
+.file-details { flex: 1; overflow: hidden; }
+.file-name { font-weight: 600; font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;}
+.file-size { font-size: 11px; color: #888; }
+.btn-remove-file { color: #dc3545; cursor: pointer; font-size: 18px; transition: color 0.2s; background: none; border: none;}
+
+/* Inputs del Formulario */
+.form-group { text-align: left; margin-bottom: 25px; }
+.form-label { font-weight: 600; font-size: 14px; margin-bottom: 8px; display: block; color: #343a40; }
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--color-borde);
+  font-size: 14px;
+}
+
+/* Botones */
+.btn-upload {
+  width: 100%;
+  padding: 14px;
+  background-color: var(--color-primario);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn-upload:hover { background-color: var(--color-primario-hover); }

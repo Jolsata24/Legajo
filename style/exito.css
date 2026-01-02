@@ -1,0 +1,108 @@
+/* style/exito.css */
+
+.success-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh; /* Centrado vertical */
+}
+
+.success-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  border: 1px solid #e9ecef;
+  padding: 50px;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Barra superior decorativa verde */
+.success-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: #198754;
+}
+
+.icon-circle {
+  width: 80px;
+  height: 80px;
+  background-color: #d1e7dd;
+  color: #198754;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 0 auto 25px auto;
+}
+
+.success-card h2 {
+  color: #212529;
+  font-size: 24px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.success-card p {
+  color: #6c757d;
+  font-size: 15px;
+  margin-bottom: 30px;
+}
+
+/* Lista de Credenciales (Estilo Recibo) */
+.credentials-box {
+  background: #f8f9fa;
+  border: 1px dashed #ced4da;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.credential-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.credential-item:last-child { margin-bottom: 0; }
+
+.credential-label { color: #6c757d; font-weight: 500; }
+.credential-value { color: #212529; font-weight: 600; font-family: monospace; font-size: 15px; }
+
+/* Botones */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.btn-pdf {
+  background-color: #dc3545;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+.btn-pdf:hover { background-color: #bb2d3b; color: white; }
+
+.btn-link {
+  color: #0d6efd;
+  text-decoration: none;
+  font-size: 14px;
+}
+.btn-link:hover { text-decoration: underline; }

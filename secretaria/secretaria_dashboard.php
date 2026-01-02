@@ -2,135 +2,116 @@
 session_start();
 require '../php/db.php';
 
-// Seguridad y obtención de datos (métricas y notificaciones)
+// 1. Seguridad: Verificar Rol Secretaria
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'secretaria') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$pendientes = 0;
-try {
-    $pendientes = $pdo->query("SELECT COUNT(*) FROM documentos WHERE estado = 'pendiente'")->fetchColumn();
-    // (Aquí iría tu código para buscar notificaciones si lo tienes)
-} catch (PDOException $e) { /*...*/ }
+$id_usuario = $_SESSION['id'];
 
-$page_title = "Dashboard - Secretaría";
-require_once '../includes/header_secretaria.php';
+try {
+    // --- CONSULTAS DASHBOARD ---
+    
+    // 1. Totales Generales (O ajusta a "WHERE id_area = ..." si solo ve su área)
+    $total_docs = $pdo->query("SELECT COUNT(*) FROM documentos")->fetchColumn();
+    $total_pendientes = $pdo->query("SELECT COUNT(*) FROM documentos WHERE estado = 'pendiente'")->fetchColumn();
+    $total_empleados = $pdo->query("SELECT COUNT(*) FROM usuarios WHERE rol = 'empleado'")->fetchColumn();
+    
+    // 2. Documentos Recientes (Globales o de área)
+    $stmtRecent = $pdo->prepare("
+        SELECT d.nombre_original, d.fecha_subida, d.estado, u.nombre as autor 
+        FROM documentos d
+        JOIN usuarios u ON d.id_usuario = u.id
+        ORDER BY d.fecha_subida DESC LIMIT 5
+    ");
+    $stmtRecent->execute();
+    $docs_recientes = $stmtRecent->fetchAll();
+
+} catch (PDOException $e) {
+    die("Error: " . $e->getMessage());
+}
+
+$page_title = "Panel de Secretaria";
+// ¡AQUÍ ESTÁ LA MAGIA! RECICLAMOS EL ESTILO DEL ADMIN
+$extra_css = "../style/admin_dashboard.css"; 
+
+// Usamos header_secretaria si tienes uno específico, o el general adaptado
+require_once '../includes/header_secretaria.php'; 
 require_once '../includes/sidebar_secretaria.php';
 ?>
-<style>
-/* Estilos para la Campana de Notificaciones */
-.notifications {
-    position: relative; /* Clave para el menú desplegable */
-    margin-right: 15px;
-}
-
-#notification-bell {
-    font-size: 20px;
-    color: #555;
-    text-decoration: none;
-}
-
-.notification-count {
-    position: absolute;
-    top: -5px;
-    right: -10px;
-    background: #dc3545; /* Rojo de alerta */
-    color: white;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 5px;
-    border-radius: 50%;
-}
-
-/* El Menú Desplegable (oculto por defecto) */
-.notification-dropdown {
-    display: none; /* Oculto por defecto */
-    position: absolute;
-    top: 40px;
-    right: 0;
-    width: 320px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-    z-index: 100;
-    border: 1px solid #eee;
-}
-
-/* Clase para mostrar el menú con JS */
-.notification-dropdown.show {
-    display: block; 
-}
-
-.notification-dropdown .dropdown-header {
-    padding: 12px 15px;
-    font-weight: 600;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.notification-dropdown .dropdown-body a {
-    display: block;
-    padding: 12px 15px;
-    text-decoration: none;
-    color: #333;
-    border-bottom: 1px solid #f0f0f0;
-}
-.notification-dropdown .dropdown-body a:hover {
-    background: #f8f9fa;
-}
-.notification-dropdown .dropdown-body a p {
-    font-size: 13px;
-    margin: 0;
-    color: #222;
-}
-.notification-dropdown .dropdown-body a small {
-    font-size: 11px;
-    color: #777;
-}
-
-.notification-dropdown .dropdown-footer {
-    padding: 10px;
-    text-align: center;
-}
-.notification-dropdown .dropdown-footer a {
-    font-size: 13px;
-    font-weight: 500;
-    color: #007bff;
-}</style>
 
 <div class="main">
+    
     <header class="topbar">
-        <h1><i class="fas fa-tachometer-alt"></i> Inicio</h1>
-        
+        <h1><i class="fas fa-columns"></i> Panel de Control</h1>
         <div class="top-actions">
-            <span style="margin-left: 20px;"><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+            <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+            <a href="../php/logout.php" class="topbar-logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </a>
         </div>
-
-        <a href="../php/logout.php" class="topbar-logout-btn">
-          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-      </a>
-
     </header>
 
     <main class="content">
+        
         <div class="cards">
             <div class="card">
-                <h3>Documentos Pendientes</h3>
-                <p style="color: #ffc107;"><?= $pendientes ?></p>
+                <h3>Documentos Totales</h3>
+                <p><?= $total_docs ?></p>
             </div>
+            <div class="card">
+                <h3>Pendientes de Revisión</h3>
+                <p><?= $total_pendientes ?></p>
+            </div>
+            <div class="card">
+                <h3>Empleados Activos</h3>
+                <p><?= $total_empleados ?></p>
+            </div>
+            <a href="subir_doc_personal.php" class="card" style="text-decoration: none; border-left-color: var(--color-exito);">
+                <h3 style="color: var(--color-exito);"><i class="fas fa-plus-circle"></i> Nueva Subida</h3>
+                <p style="font-size: 16px; margin-top: 5px; color: #666;">Subir documento al sistema</p>
+            </a>
         </div>
 
-        <div class="card">
-            <h3>Acciones Principales</h3>
-            <p style="text-align: left; font-size: 16px; font-weight: 400;">
-                Bienvenida al panel. Tu tarea principal es gestionar los documentos entrantes.
-            </p>
-            <div style="margin-top: 20px; text-align: left;">
-                <a href="secretaria_documentos.php" style="text-decoration: none; background: #007bff; color: white; padding: 12px 20px; border-radius: 8px; font-weight: 600;">
-                    <i class="fas fa-inbox"></i> Ir a Bandeja de Entrada (<?= $pendientes ?>)
-                </a>
-            </div>
+        <div class="card-container">
+            <h3><i class="fas fa-clock"></i> Últimos Documentos Recibidos</h3>
+            
+            <?php if(empty($docs_recientes)): ?>
+                <p style="color: #888; text-align: center; padding: 20px;">No hay documentos recientes.</p>
+            <?php else: ?>
+                <table class="activity-list" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                            <th style="padding: 10px; font-size: 12px; color: #666;">Documento</th>
+                            <th style="padding: 10px; font-size: 12px; color: #666;">Subido Por</th>
+                            <th style="padding: 10px; font-size: 12px; color: #666;">Fecha</th>
+                            <th style="padding: 10px; font-size: 12px; color: #666;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($docs_recientes as $doc): 
+                            $estadoColor = $doc['estado'] == 'pendiente' ? '#ffc107' : '#198754';
+                        ?>
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px 10px; font-weight: 500;">
+                                <i class="far fa-file-alt" style="margin-right: 8px; color: #666;"></i>
+                                <?= htmlspecialchars($doc['nombre_original']) ?>
+                            </td>
+                            <td style="padding: 12px 10px;"><?= htmlspecialchars($doc['autor']) ?></td>
+                            <td style="padding: 12px 10px; font-size: 13px;"><?= date("d/m H:i", strtotime($doc['fecha_subida'])) ?></td>
+                            <td style="padding: 12px 10px;">
+                                <span style="font-size: 11px; padding: 3px 8px; border-radius: 10px; background: <?= $estadoColor ?>20; color: <?= $estadoColor ?>; font-weight: 600;">
+                                    <?= ucfirst($doc['estado']) ?>
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
+
     </main>
 </div>
 

@@ -2,118 +2,152 @@
 session_start();
 require '../php/db.php';
 
-// Verificar sesión
-if (!isset($_SESSION['id']) || !in_array($_SESSION['rol'], ['rrhh', 'admin'])) {
+// 1. Verificar Sesión de Admin
+if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$id_usuario = $_SESSION['id'];
-
-// Obtenemos datos del usuario logueado
-$stmt = $pdo->prepare("SELECT u.nombre, u.email, u.rol, u.foto, a.nombre AS area
-                       FROM usuarios u
-                       LEFT JOIN areas a ON u.id_area = a.id
-                       WHERE u.id = ?");
-$stmt->execute([$id_usuario]);
-$usuario = $stmt->fetch();
-
-if (!$usuario) {
-    die("Usuario no encontrado.");
-}
-
-// Ruta de la foto
-$foto_usuario = (!empty($usuario['foto']) && file_exists("../uploads/usuarios/" . $usuario['foto']))
-    ? "../uploads/usuarios/" . $usuario['foto']
-    : "../img/user2.png";
-
-$nombre_usuario = $usuario['nombre'];
-$rol_usuario    = $usuario['rol'];
-$area_usuario   = $usuario['area'] ?? "Sin área";
-
-// Traer documentos
 try {
-    $stmt = $pdo->query("
-        SELECT d.id, d.nombre_original, d.tipo, d.fecha_subida, d.estado,
-               u.nombre AS empleado_nombre, u.email
+    // 2. Consulta Global de Documentos
+    // Traemos datos del documento, del usuario propietario y de la sección
+    $sql = "
+        SELECT 
+            d.*, 
+            u.nombre as usuario_nombre, 
+            u.rol as usuario_rol, 
+            u.foto as usuario_foto,
+            s.nombre as seccion_nombre
         FROM documentos d
-        INNER JOIN usuarios u ON d.id_usuario = u.id
+        JOIN usuarios u ON d.id_usuario = u.id
+        LEFT JOIN secciones_legajo s ON d.id_seccion = s.id
         ORDER BY d.fecha_subida DESC
-    ");
-    $documentos = $stmt->fetchAll();
+    ";
+    $stmt = $pdo->query($sql);
+    $documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 } catch (PDOException $e) {
-    die("Error en la consulta: " . $e->getMessage());
+    die("Error en la base de datos: " . $e->getMessage());
 }
 
-$page_title = "Ver Documentos";
-require_once '../includes/header_admin.php'; // Asumiendo que tienes un header para admin
+$page_title = "Gestión de Documentos";
+$extra_css = "../style/admin_documentos.css";
+
+require_once '../includes/header_admin.php';
 require_once '../includes/sidebar_admin.php';
 ?>
 
-<style>
-    .styled-table { width: 100%; border-collapse: collapse; }
-    .styled-table th, .styled-table td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-    .styled-table th { background-color: #f2f2f2; }
-    
-    .search-bar {
-        margin-bottom: 20px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        width: 100%;
-        font-size: 16px;
-    }
-
-    .estado {
-        padding: 5px 10px; border-radius: 15px; font-weight: 600;
-        font-size: 12px; text-align: center; display: inline-block;
-    }
-    .estado-pendiente { background-color: #fef9c3; color: #713f12; }
-    .estado-observado { background-color: #ffedd5; color: #9a3412; }
-    .estado-revisado { background-color: #dcfce7; color: #166534; }
-    .estado-rechazado { background-color: #fee2e2; color: #991b1b; }
-</style>
 <div class="main">
+    
     <header class="topbar">
-      <h1><i class="fas fa-file-alt"></i>  Documentos de Empleados</h1>
+        <h1><i class="fas fa-archive"></i> Gestión Global de Documentos</h1>
+        <div class="top-actions">
+            <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+            <a href="../php/logout.php" class="topbar-logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </a>
+        </div>
     </header>
 
     <main class="content">
-        <div class="card">
-            <input type="text" id="searchInput" class="search-bar" placeholder="Buscar por empleado, email, nombre de documento...">
 
-            <?php if (count($documentos) > 0): ?>
-              <table class="styled-table" id="documentosTable">
-                <thead>
-                  <tr>
-                    <th>Empleado</th>
-                    <th>Documento</th>
-                    <th>Estado</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($documentos as $doc): ?>
-                  <tr>
-                    <td><?= htmlspecialchars($doc['empleado_nombre']) ?><br><small><?= htmlspecialchars($doc['email']) ?></small></td>
-                    <td><?= htmlspecialchars($doc['nombre_original']) ?></td>
-                    <td>
-                        <span class="estado estado-<?= strtolower(htmlspecialchars($doc['estado'] ?? '')) ?>">
-                            <?= htmlspecialchars(strtoupper($doc['estado'] ?? 'N/A')) ?>
-                        </span>
-                    </td>
-                    <td><?= $doc['fecha_subida'] ?></td>
-                    <td style="display: flex; gap: 10px;">
-                      <a href="../php/ver_documento.php?id=<?= $doc['id'] ?>&action=view" target="_blank" class="btn-view"><i class="fas fa-eye"></i> Ver</a>
-                      <a href="../php/ver_documento.php?id=<?= $doc['id'] ?>&action=download" class="btn-download"><i class="fas fa-download"></i> Descargar</a>
-                    </td>
-                  </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
+        <div class="control-bar">
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Buscar por usuario, archivo o sección...">
+            </div>
+            
+            <div class="filter-group">
+                <select id="statusFilter" class="form-select">
+                    <option value="">Todos los Estados</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="validado">Validado/Aprobado</option>
+                    <option value="rechazado">Rechazado</option>
+                </select>
+                </div>
+        </div>
+
+        <div class="table-container">
+            <?php if (empty($documentos)): ?>
+                <div style="padding: 40px; text-align: center; color: var(--color-texto-secundario);">
+                    <i class="fas fa-file-invoice" style="font-size: 48px; opacity: 0.5; margin-bottom: 15px;"></i>
+                    <p>No se encontraron documentos registrados en el sistema.</p>
+                </div>
             <?php else: ?>
-              <p>No hay documentos subidos en el sistema.</p>
+                <table class="admin-table" id="docsTable">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Documento</th>
+                            <th>Sección</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($documentos as $doc): 
+                            // Iconos
+                            $ext = strtolower(pathinfo($doc['nombre_guardado'] ?? '', PATHINFO_EXTENSION));
+                            $iconClass = 'fa-file icon-def';
+                            if ($ext === 'pdf') $iconClass = 'fa-file-pdf icon-pdf';
+                            elseif (in_array($ext, ['jpg','png','jpeg'])) $iconClass = 'fa-file-image icon-img';
+                            elseif (in_array($ext, ['doc','docx'])) $iconClass = 'fa-file-word icon-word';
+
+                            // Estado
+                            $estado = strtolower($doc['estado'] ?? 'pendiente');
+                            $badgeClass = 'status-pendiente';
+                            if ($estado === 'validado' || $estado === 'aprobado') $badgeClass = 'status-validado';
+                            elseif ($estado === 'rechazado') $badgeClass = 'status-rechazado';
+
+                            // Foto Usuario
+                            $fotoUser = !empty($doc['usuario_foto']) ? "../uploads/usuarios/".$doc['usuario_foto'] : "../img/user.png";
+                        ?>
+                        <tr class="doc-row" data-estado="<?= $estado ?>">
+                            <td>
+                                <div class="user-cell">
+                                    <img src="<?= htmlspecialchars($fotoUser) ?>" alt="Avatar">
+                                    <div class="user-info-mini">
+                                        <h4><?= htmlspecialchars($doc['usuario_nombre']) ?></h4>
+                                        <span><?= ucfirst($doc['usuario_rol']) ?></span>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                <div class="doc-cell">
+                                    <i class="fas <?= $iconClass ?>"></i>
+                                    <span class="doc-name"><?= htmlspecialchars($doc['titulo'] ?? $doc['nombre_original']) ?></span>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span style="font-size: 13px; color: #666;">
+                                    <?= htmlspecialchars($doc['seccion_nombre'] ?? 'General') ?>
+                                </span>
+                            </td>
+
+                            <td><?= date("d/m/Y", strtotime($doc['fecha_subida'])) ?></td>
+
+                            <td>
+                                <span class="status-badge <?= $badgeClass ?>"><?= ucfirst($estado) ?></span>
+                            </td>
+
+                            <td style="text-align: right;">
+                                <a href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank" class="btn-icon" title="Ver Documento">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="../php/eliminar_doc.php?id=<?= $doc['id'] ?>&redirect=admin_docs" 
+                                   class="btn-icon delete" 
+                                   title="Eliminar"
+                                   onclick="return confirm('¿Eliminar este documento permanentemente?');">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             <?php endif; ?>
         </div>
     </main>
@@ -122,31 +156,32 @@ require_once '../includes/sidebar_admin.php';
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
-    const table = document.getElementById('documentosTable');
-    if (table) {
-        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    const statusFilter = document.getElementById('statusFilter');
+    const tableRows = document.querySelectorAll('.doc-row');
 
-        searchInput.addEventListener('keyup', function() {
-            const filter = searchInput.value.toLowerCase();
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusTerm = statusFilter.value.toLowerCase();
+
+        tableRows.forEach(row => {
+            const textContent = row.innerText.toLowerCase();
+            const rowStatus = row.getAttribute('data-estado').toLowerCase();
             
-            for (let i = 0; i < rows.length; i++) {
-                const cells = rows[i].getElementsByTagName('td');
-                let found = false;
-                // Busca en todas las celdas (excepto la de acciones)
-                for (let j = 0; j < cells.length - 1; j++) {
-                    if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    rows[i].style.display = "";
-                } else {
-                    rows[i].style.display = "none";
-                }
+            // Lógica: Debe coincidir con el texto BUSCADO y con el ESTADO seleccionado
+            const matchesSearch = textContent.includes(searchTerm);
+            const matchesStatus = statusTerm === '' || rowStatus.includes(statusTerm);
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
         });
     }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
 });
 </script>
+
 <?php require_once '../includes/footer.php'; ?>

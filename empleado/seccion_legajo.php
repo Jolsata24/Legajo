@@ -2,122 +2,129 @@
 session_start();
 require '../php/db.php';
 
-// Verificar sesión
+// 1. Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$usuario_id = $_SESSION['id'];
-$seccion_id = $_GET['id'] ?? null;
+$id_usuario = $_SESSION['id'];
+$id_seccion = $_GET['id'] ?? null;
 
-if (!$seccion_id) {
-    die("Sección no especificada.");
+if (!$id_seccion) {
+    header("Location: mi_legajo.php");
+    exit;
 }
 
 try {
-    // Traer datos de la sección
-    $stmt = $pdo->prepare("SELECT nombre FROM secciones_legajo WHERE id = ?");
-    $stmt->execute([$seccion_id]);
-    $seccion = $stmt->fetch(PDO::FETCH_ASSOC);
+    // 2. Obtener Nombre de la Sección
+    $stmtSec = $pdo->prepare("SELECT nombre FROM secciones_legajo WHERE id = ?");
+    $stmtSec->execute([$id_seccion]);
+    $seccion = $stmtSec->fetch();
 
-    if (!$seccion) {
-        die("Sección no encontrada.");
-    }
+    if (!$seccion) die("Carpeta no encontrada.");
 
-    // Traer documentos de esa sección
-    $stmt = $pdo->prepare("
-        SELECT id, nombre_original, nombre_guardado, tipo, fecha_subida
-        FROM documentos
-        WHERE id_usuario = ? AND id_seccion = ?
+    // 3. Obtener Documentos del Usuario en esta Sección
+    $stmtDocs = $pdo->prepare("
+        SELECT * FROM documentos 
+        WHERE id_usuario = ? AND id_seccion = ? 
         ORDER BY fecha_subida DESC
     ");
-    $stmt->execute([$usuario_id, $seccion_id]);
-    $documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmtDocs->execute([$id_usuario, $id_seccion]);
+    $documentos = $stmtDocs->fetchAll();
 
 } catch (PDOException $e) {
-    die("Error en la consulta: " . $e->getMessage());
+    die("Error: " . $e->getMessage());
 }
 
-// --- ¡INICIO DE LA CORRECCIÓN DE ESTILO! ---
+$page_title = "Carpeta: " . $seccion['nombre'];
+// RECICLAJE: Usamos el estilo estándar de listas de archivos
+$extra_css = "../style/seccion_legajo.css";
 
-$page_title = "Sección: " . htmlspecialchars($seccion['nombre']);
 require_once '../includes/header_empleado.php';
 require_once '../includes/sidebar_empleado.php';
 ?>
 
 <div class="main">
-    <header class="topbar">
-      <h1><i class="fas fa-folder-open"></i> Sección: <?= htmlspecialchars($seccion['nombre']); ?></h1>
-      
-      <div class="top-actions">
-          <a href="../php/logout.php" class="topbar-logout-btn">
-              <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-          </a>
-      </div>
+    
+    <header class="section-header">
+        <div class="header-left">
+            <a href="mi_legajo.php" class="btn-back-circle" title="Volver a Carpetas">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="section-title">
+                <h2><?= htmlspecialchars($seccion['nombre']) ?></h2>
+                <span>Explorador de Archivos</span>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <a href="subir_documento.php?seccion=<?= $id_seccion ?>" class="btn-primary">
+                <i class="fas fa-cloud-upload-alt"></i> Subir aquí
+            </a>
+        </div>
     </header>
 
     <main class="content">
         
-        <a href="mi_legajo.php" class="btn-back" style="margin-bottom: 20px;">
-            <i class="fas fa-arrow-left"></i> Volver a Mi Legajo
-        </a>
-
-        <div class="card">
-            <h3><i class="fas fa-file-alt"></i> Documentos en esta sección</h3>
-            
+        <div class="table-container">
             <?php if (empty($documentos)): ?>
-                <p>No has subido documentos en esta sección aún.</p>
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Carpeta Vacía</h3>
+                    <p>No tienes documentos registrados en esta sección.</p>
+                    <a href="subir_documento.php?seccion=<?= $id_seccion ?>" style="color: var(--color-primario); text-decoration: none; font-weight: 500;">
+                        Subir el primero &rarr;
+                    </a>
+                </div>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="styled-table">
-                        <thead>
-                            <tr>
-                                <th>Nombre Original</th>
-                                <th>Tipo</th>
-                                <th>Fecha de Subida</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($documentos as $doc): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($doc['nombre_original']); ?></td>
-                                    <td><?= htmlspecialchars($doc['tipo']); ?></td>
-                                    <td><?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])); ?></td>
-                                    <td>
-                                        <a href="../php/ver_documento.php?id=<?= $doc['id'] ?>&action=view" class="btn-download" target="_blank">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </div>
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Fecha de Subida</th>
+                            <th>Estado</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($documentos as $doc): 
+                            // Iconos según extensión
+                            $ext = strtolower(pathinfo($doc['nombre_guardado'], PATHINFO_EXTENSION));
+                            $icon = 'fa-file file-icon def';
+                            if ($ext === 'pdf') $icon = 'fa-file-pdf file-icon pdf';
+                            elseif (in_array($ext, ['doc','docx'])) $icon = 'fa-file-word file-icon word';
+                            elseif (in_array($ext, ['jpg','png','jpeg'])) $icon = 'fa-file-image file-icon img';
 
-        <div class="card">
-            <h3><i class="fas fa-upload"></i> Subir Nuevo Documento</h3>
-            
-            <form action="subir_doc_personal.php" method="post" enctype="multipart/form-data" class="form-dashboard">
-                <input type="hidden" name="seccion_id" value="<?= $seccion_id; ?>">
-                
-                <div class="form-group">
-                    <label for="tipo">Tipo de documento:</label>
-                    <input type="text" name="tipo" id="tipo" required placeholder="Ej: Certificado de Trabajo">
-                </div>
-                
-                <div class="form-group">
-                    <label for="documento">Archivo (PDF, Word, JPG, PNG):</label>
-                    <input type="file" name="documento" id="documento" required>
-                </div>
-                
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-check"></i> Subir Documento
-                </button>
-            </form>
+                            // Estado visual
+                            $st_lower = strtolower($doc['estado']);
+                            $badge = 'pendiente'; // Clase CSS base
+                            if ($st_lower === 'aprobado') $badge = 'validado';
+                            elseif ($st_lower === 'rechazado') $badge = 'rechazado';
+                        ?>
+                        <tr>
+                            <td>
+                                <div class="file-info">
+                                    <i class="fas <?= $icon ?>"></i>
+                                    <div>
+                                        <span class="file-name"><?= htmlspecialchars($doc['nombre_original']) ?></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><?= date("d/m/Y", strtotime($doc['fecha_subida'])) ?></td>
+                            <td>
+                                <span class="badge <?= $badge ?>"><?= ucfirst($doc['estado']) ?></span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="ver_documento_enviado.php?id=<?= $doc['id'] ?>" class="action-btn" title="Ver Estado y Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
 
     </main>

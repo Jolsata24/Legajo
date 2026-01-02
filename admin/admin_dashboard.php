@@ -2,6 +2,7 @@
 session_start();
 require_once "../php/db.php";
 
+// 1. Verificación de Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
   header("Location: ../into/login.html");
   exit;
@@ -12,19 +13,19 @@ $id_usuario = $_SESSION['id'];
 try {
   // --- CONSULTAS PARA EL DASHBOARD ---
 
-  // 1. Notificaciones (ya lo teníamos)
+  // A. Notificaciones
   $stmt_notif = $pdo->prepare("SELECT id, mensaje, leido, enlace FROM notificaciones WHERE id_usuario_destino = ? ORDER BY fecha_creacion DESC LIMIT 10");
   $stmt_notif->execute([$id_usuario]);
   $notificaciones = $stmt_notif->fetchAll();
   $num_no_leidas = count(array_filter($notificaciones, fn($n) => !$n['leido']));
 
-  // 2. Métricas para las tarjetas
+  // B. Métricas para las tarjetas superiores
   $total_docs     = $pdo->query("SELECT COUNT(*) FROM documentos")->fetchColumn();
   $total_pendientes = $pdo->query("SELECT COUNT(*) FROM documentos WHERE estado = 'pendiente'")->fetchColumn();
   $total_usuarios   = $pdo->query("SELECT COUNT(*) FROM usuarios")->fetchColumn();
   $total_areas      = $pdo->query("SELECT COUNT(*) FROM areas")->fetchColumn();
 
-  // 3. Datos para el gráfico de barras (Documentos por Estado)
+  // C. Datos para el gráfico de barras (Documentos por Estado)
   $estado_docs = $pdo->query("SELECT estado, COUNT(*) as total FROM documentos GROUP BY estado")->fetchAll(PDO::FETCH_ASSOC);
   $labels_grafico = [];
   $data_grafico   = [];
@@ -33,146 +34,33 @@ try {
     $data_grafico[]   = (int)$row['total'];
   }
 
-  // 4. Actividad Reciente (usando la tabla de historial)
+  // D. Actividad Reciente (usando la tabla de historial)
   $actividad_reciente = $pdo->query(
     "SELECT h.descripcion, h.fecha, u.nombre as nombre_usuario
          FROM documentos_historial h
          JOIN usuarios u ON h.id_usuario_accion = u.id
          ORDER BY h.fecha DESC
-         LIMIT 5" // Traemos las últimas 5 actividades
+         LIMIT 5"
   )->fetchAll();
+
 } catch (PDOException $e) {
   die("Error al cargar los datos del dashboard: " . $e->getMessage());
 }
 
+// --- CONFIGURACIÓN DE LA PÁGINA ---
 $page_title = "Dashboard - Administrador";
+
+// ¡IMPORTANTE! Aquí definimos el CSS específico de esta página
+$extra_css = "../style/admin_dashboard.css"; 
+
 require_once '../includes/header_admin.php';
 require_once '../includes/sidebar_admin.php';
 ?>
-<style>
-  .activity-list {
-    list-style: none;
-    padding: 0;
-  }
-
-  .activity-list li {
-    border-bottom: 1px solid #eee;
-    padding: 15px 0;
-  }
-
-  .activity-list li:last-child {
-    border-bottom: none;
-  }
-
-  .activity-list p {
-    margin: 0;
-    font-size: 14px;
-    color: #333;
-  }
-
-  .activity-list small {
-    color: #777;
-  }
-
-  .btn-quick-action {
-    display: inline-block;
-    background-color: #007bff;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    margin-right: 15px;
-    margin-top: 10px;
-  }
-
-  .btn-quick-action:hover {
-    background-color: #0056b3;
-  }
-  /* Estilos para la Campana de Notificaciones */
-.notifications {
-    position: relative; /* Clave para el menú desplegable */
-    margin-right: 15px;
-}
-
-#notification-bell {
-    font-size: 20px;
-    color: #555;
-    text-decoration: none;
-}
-
-.notification-count {
-    position: absolute;
-    top: -5px;
-    right: -10px;
-    background: #dc3545; /* Rojo de alerta */
-    color: white;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 5px;
-    border-radius: 50%;
-}
-
-/* El Menú Desplegable (oculto por defecto) */
-.notification-dropdown {
-    display: none; /* Oculto por defecto */
-    position: absolute;
-    top: 40px;
-    right: 0;
-    width: 320px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-    z-index: 100;
-    border: 1px solid #eee;
-}
-
-/* Clase para mostrar el menú con JS */
-.notification-dropdown.show {
-    display: block; 
-}
-
-.notification-dropdown .dropdown-header {
-    padding: 12px 15px;
-    font-weight: 600;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.notification-dropdown .dropdown-body a {
-    display: block;
-    padding: 12px 15px;
-    text-decoration: none;
-    color: #333;
-    border-bottom: 1px solid #f0f0f0;
-}
-.notification-dropdown .dropdown-body a:hover {
-    background: #f8f9fa;
-}
-.notification-dropdown .dropdown-body a p {
-    font-size: 13px;
-    margin: 0;
-    color: #222;
-}
-.notification-dropdown .dropdown-body a small {
-    font-size: 11px;
-    color: #777;
-}
-
-.notification-dropdown .dropdown-footer {
-    padding: 10px;
-    text-align: center;
-}
-.notification-dropdown .dropdown-footer a {
-    font-size: 13px;
-    font-weight: 500;
-    color: #007bff;
-}
-  /* ... Tus estilos de notificaciones ... */
-</style>
 
 <div class="main">
   <header class="topbar">
     <h1><i class="fas fa-tachometer-alt"></i> Dashboard de Administración</h1>
+    
     <div class="top-actions">
       <div class="notifications">
         <a href="#" id="notification-bell">
@@ -184,21 +72,31 @@ require_once '../includes/sidebar_admin.php';
         <div class="notification-dropdown" id="notification-dropdown-list">
           <div class="dropdown-header">Notificaciones</div>
           <div class="dropdown-body">
+             <?php if (empty($notificaciones)): ?>
+                <a href="#"><p>No tienes notificaciones nuevas</p></a>
+             <?php else: ?>
+                <?php foreach(array_slice($notificaciones, 0, 5) as $notif): ?>
+                  <a href="<?= htmlspecialchars($notif['enlace'] ?: '#') ?>" style="<?= $notif['leido'] ? '' : 'background-color: #f0f8ff;' ?>">
+                    <p><?= htmlspecialchars($notif['mensaje']) ?></p>
+                  </a>
+                <?php endforeach; ?>
+             <?php endif; ?>
           </div>
           <div class="dropdown-footer">
             <a href="#">Ver todas</a>
           </div>
         </div>
       </div>
+
       <span style="margin-left: 20px;"><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
       <a href="../php/logout.php" class="topbar-logout-btn">
           <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
       </a>
     </div>
-    
   </header>
 
   <main class="content">
+    
     <div class="cards">
       <div class="card">
         <h3>Total Documentos</h3>
@@ -218,21 +116,22 @@ require_once '../includes/sidebar_admin.php';
       </div>
     </div>
 
-    <div class="card">
+    <div class="card-container">
       <h3><i class="fas fa-rocket"></i> Acciones Rápidas</h3>
       <a href="crear_usuario.php" class="btn-quick-action"><i class="fas fa-user-plus"></i> Crear Nuevo Usuario</a>
       <a href="#" class="btn-quick-action" style="background-color: #6c757d;"><i class="fas fa-sitemap"></i> Gestionar Áreas</a>
     </div>
 
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-      <div class="card" style="flex: 1; min-width: 300px;">
+      
+      <div class="card-container" style="flex: 1; min-width: 300px;">
         <h3><i class="fas fa-chart-bar"></i> Documentos por Estado</h3>
         <div style="height: 300px;">
           <canvas id="docEstadoChart"></canvas>
         </div>
       </div>
 
-      <div class="card" style="flex: 1; min-width: 300px;">
+      <div class="card-container" style="flex: 1; min-width: 300px;">
         <h3><i class="fas fa-history"></i> Actividad Reciente del Sistema</h3>
         <ul class="activity-list">
           <?php if (empty($actividad_reciente)): ?>
@@ -247,15 +146,32 @@ require_once '../includes/sidebar_admin.php';
           <?php endif; ?>
         </ul>
       </div>
+
     </div>
   </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // ... tu script de notificaciones ...
+  // Lógica simple para mostrar/ocultar notificaciones
+  const bell = document.getElementById('notification-bell');
+  const dropdown = document.getElementById('notification-dropdown-list');
+  
+  if(bell) {
+      bell.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.classList.toggle('show');
+      });
+      
+      // Cerrar al hacer click fuera
+      document.addEventListener('click', (e) => {
+        if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.remove('show');
+        }
+      });
+  }
 
-  // Gráfico
+  // Configuración del Gráfico
   const ctx = document.getElementById('docEstadoChart').getContext('2d');
   new Chart(ctx, {
     type: 'bar',
@@ -273,14 +189,10 @@ require_once '../includes/sidebar_admin.php';
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: false
-        }
+        legend: { display: false }
       },
       scales: {
-        y: {
-          beginAtZero: true
-        }
+        y: { beginAtZero: true }
       }
     }
   });

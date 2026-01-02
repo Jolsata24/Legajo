@@ -2,106 +2,154 @@
 session_start();
 require '../php/db.php';
 
-// Solo secretaria
+// 1. Verificar sesión Admin
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$area_id = $_GET['area_id'] ?? null;
-if (!$area_id) {
-    die("⚠️ No se especificó el área.");
+$id_area = $_GET['id_area'] ?? null;
+
+if (!$id_area) {
+    header("Location: panel_jefes.php");
+    exit;
 }
 
 try {
-    // Nombre del área
-    $stmt = $pdo->prepare("SELECT nombre FROM areas WHERE id = ?");
-    $stmt->execute([$area_id]);
-    $area = $stmt->fetch();
+    // 2. Obtener Info del Área
+    $stmtArea = $pdo->prepare("SELECT * FROM areas WHERE id = ?");
+    $stmtArea->execute([$id_area]);
+    $area = $stmtArea->fetch();
 
-    // Documentos del área
-    // Documentos del área
-$stmt = $pdo->prepare("
-    SELECT id, nombre_original, tipo, fecha_subida, estado, feedback
-    FROM documentos 
-    WHERE id_area_destino = ?
-    ORDER BY fecha_subida DESC
-");
-$stmt->execute([$area_id]);
-$documentos = $stmt->fetchAll();
+    if (!$area) die("Área no encontrada.");
+
+    // 3. Obtener Documentos del Área (A través de los usuarios)
+    // Seleccionamos datos del documento y del usuario que lo subió
+    $sqlDocs = "
+        SELECT 
+            d.*,
+            u.nombre as usuario_nombre,
+            u.rol as usuario_rol,
+            u.foto as usuario_foto
+        FROM documentos d
+        JOIN usuarios u ON d.id_usuario = u.id
+        WHERE u.id_area = ?
+        ORDER BY d.fecha_subida DESC
+    ";
+    $stmtDocs = $pdo->prepare($sqlDocs);
+    $stmtDocs->execute([$id_area]);
+    $documentos = $stmtDocs->fetchAll();
 
 } catch (PDOException $e) {
-    die("Error en la consulta: " . $e->getMessage());
+    die("Error: " . $e->getMessage());
 }
 
+$page_title = "Área: " . $area['nombre'];
+$extra_css = "../style/admin_documento_area.css";
 
+require_once '../includes/header_admin.php';
+require_once '../includes/sidebar_admin.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Documentos - <?= htmlspecialchars($area['nombre']); ?></title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="brand"><h2>Bienvenido</h2></div>
-    <div class="user-info">
-      <img src="<?= htmlspecialchars($_SESSION['foto'] ?? '../img/user2.png') ?>" alt="Foto Usuario">
-      <h4><?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario') ?></h4>
-    </div>
-    <nav class="menu">
-      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
-      <a href="empleados_panel.php" class="active"><i class="fas fa-users"></i> Empleados</a>
-      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
-      <a href="../php/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
-    </nav>
-  </aside>
 
-  <!-- Main -->
-  <div class="main">
+<div class="main">
+    
     <header class="topbar">
-      <h1><i class="fas fa-file-alt"></i> Documentos - <?= htmlspecialchars($area['nombre']); ?></h1>
-      <div class="top-actions"><span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span></div>
+        <h1><i class="fas fa-folder-open"></i> Documentos por Área</h1>
+        <div class="top-actions">
+            <a href="panel_jefes.php" class="btn-back" style="color: #6c757d; text-decoration: none; font-weight: 500; margin-right: 15px;">
+                <i class="fas fa-arrow-left"></i> Volver a Áreas
+            </a>
+            <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+        </div>
     </header>
-    <a href="panel_jefes.php" class="btn-back">
-  <i class="fas fa-arrow-left"></i> Atrás
-</a>
+
     <main class="content">
-      <?php if ($documentos): ?>
-        <div class="card-grid">
-          <?php foreach ($documentos as $doc): ?>
-            <div class="card-mini">
-              <div class="card-header"><i class="fas fa-file"></i></div>
-              <div class="card-body">
-  <h3><?= htmlspecialchars($doc['nombre_original']); ?></h3>
-  <p><strong>Fecha:</strong> <?= htmlspecialchars($doc['fecha_subida']); ?></p>
-  <p><strong>Estado:</strong> 
-    <span class="estado <?= strtolower($doc['estado']); ?>">
-      <?= htmlspecialchars($doc['estado']); ?>
-    </span>
-  </p>
-  <?php if (!empty($doc['feedback'])): ?>
-    <p><strong>Feedback:</strong> <?= htmlspecialchars($doc['feedback']); ?></p>
-  <?php endif; ?>
+        
+        <div class="area-hero">
+            <div class="area-icon-large">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="area-details">
+                <h2><?= htmlspecialchars($area['nombre']) ?></h2>
+                <p><?= htmlspecialchars($area['descripcion'] ?? 'Gestión de documentos de este departamento.') ?></p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <?php if (empty($documentos)): ?>
+                <div style="padding: 50px; text-align: center; color: #6c757d;">
+                    <i class="fas fa-file-invoice" style="font-size: 40px; opacity: 0.3; margin-bottom: 15px;"></i>
+                    <p>No hay documentos cargados por empleados de esta área.</p>
+                </div>
+            <?php else: ?>
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Subido Por</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($documentos as $doc): 
+                            // Iconos
+                            $ext = strtolower(pathinfo($doc['nombre_guardado'] ?? '', PATHINFO_EXTENSION));
+                            $iconClass = 'fa-file';
+                            $iconColor = '#6c757d';
+                            if ($ext === 'pdf') { $iconClass = 'fa-file-pdf'; $iconColor = '#dc3545'; }
+                            elseif (in_array($ext, ['doc', 'docx'])) { $iconClass = 'fa-file-word'; $iconColor = '#0d6efd'; }
+                            elseif (in_array($ext, ['jpg', 'png'])) { $iconClass = 'fa-file-image'; $iconColor = '#198754'; }
+
+                            // Estado
+                            $estado = strtolower($doc['estado'] ?? 'pendiente');
+                            $badgeClass = 'status-pendiente';
+                            if ($estado === 'validado' || $estado === 'aprobado') $badgeClass = 'status-validado';
+                            elseif ($estado === 'rechazado') $badgeClass = 'status-rechazado';
+
+                            // Foto Usuario
+                            $fotoUser = !empty($doc['usuario_foto']) ? "../uploads/usuarios/" . $doc['usuario_foto'] : "../img/user.png";
+                        ?>
+                        <tr>
+                            <td>
+                                <div class="doc-info-cell">
+                                    <i class="fas <?= $iconClass ?>" style="color: <?= $iconColor ?>; font-size: 18px;"></i>
+                                    <span class="doc-title"><?= htmlspecialchars($doc['titulo'] ?? $doc['nombre_original']) ?></span>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="user-info-cell">
+                                    <img src="<?= htmlspecialchars($fotoUser) ?>" alt="User">
+                                    <div>
+                                        <span class="user-name-text"><?= htmlspecialchars($doc['usuario_nombre']) ?></span>
+                                        <span class="user-role-text"><?= ucfirst($doc['usuario_rol']) ?></span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td><?= htmlspecialchars($doc['tipo']) ?></td>
+                            <td><?= date("d/m/Y", strtotime($doc['fecha_subida'])) ?></td>
+                            
+                            <td>
+                                <span class="status-badge <?= $badgeClass ?>"><?= ucfirst($estado) ?></span>
+                            </td>
+
+                            <td style="text-align: right;">
+                                <a href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank" class="btn-action" title="Ver Documento">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+    </main>
 </div>
 
-              <div class="card-footer">
-                <a class="btn-view" href="ver_documento.php?id=<?= $doc['id']; ?>">
-                  <i class="fas fa-eye"></i> Ver Detalles
-                </a>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      <?php else: ?>
-        <p>No hay documentos en esta área.</p>
-      <?php endif; ?>
-    </main>
-  </div>
-</body>
-</html>
+<?php require_once '../includes/footer.php'; ?>

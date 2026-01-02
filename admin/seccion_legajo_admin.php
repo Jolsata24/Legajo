@@ -2,6 +2,7 @@
 session_start();
 require '../php/db.php';
 
+// 1. Verificar Sesión (Lógica Original)
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../into/login.html");
     exit;
@@ -9,18 +10,28 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
 
 $usuario_id = $_SESSION['id'];
 $seccion_id = $_GET['id'] ?? null;
-if (!$seccion_id) die("Sección no especificada.");
+
+if (!$seccion_id) {
+    // Redirección segura si no hay ID
+    header("Location: mi_legajo.php");
+    exit;
+}
 
 try {
+    // 2. Obtener datos de la Sección (Lógica Original)
     $stmt_seccion = $pdo->prepare("SELECT nombre FROM secciones_legajo WHERE id = ?");
     $stmt_seccion->execute([$seccion_id]);
     $seccion = $stmt_seccion->fetch();
+
     if (!$seccion) die("Sección no encontrada.");
 
+    // 3. Obtener Documentos (Lógica Original)
     $stmt_docs = $pdo->prepare("SELECT * FROM documentos WHERE id_usuario = ? AND id_seccion = ? ORDER BY fecha_subida DESC");
     $stmt_docs->execute([$usuario_id, $seccion_id]);
     $documentos = $stmt_docs->fetchAll();
 
+    // (Opcional) Datos de usuario para header/sidebar ya se manejan en los includes, 
+    // pero dejamos la consulta por si necesitas datos específicos extra.
     $stmt_user = $pdo->prepare("SELECT nombre, rol FROM usuarios WHERE id = ?");
     $stmt_user->execute([$usuario_id]);
     $usuario = $stmt_user->fetch();
@@ -28,80 +39,96 @@ try {
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
+
+// Configuración de Cabecera y Estilos
+$page_title = "Sección: " . $seccion['nombre'];
+$extra_css = "../style/seccion_legajo.css";
+
+require_once '../includes/header_admin.php';
+require_once '../includes/sidebar_admin.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Sección: <?= htmlspecialchars($seccion['nombre']) ?></title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="brand"><h2>Panel de Admin</h2></div>
-        <div class="user-info">
-            <img src="../img/user2.png" alt="Foto de <?= htmlspecialchars($usuario['nombre']) ?>">
-            <h4><?= htmlspecialchars($usuario['nombre']); ?></h4>
-            <p><?= htmlspecialchars(ucfirst($usuario['rol'])); ?></p>
+
+<div class="main">
+    
+    <header class="section-header">
+        <div class="header-left">
+            <a href="mi_legajo.php" class="btn-back-circle" title="Volver a Carpetas">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="section-title">
+                <h2><?= htmlspecialchars($seccion['nombre']) ?></h2>
+                <span>Gestionando documentos</span>
+            </div>
         </div>
-        <nav class="menu">
-      <a href="admin_dashboard.php"><i class="fas fa-home"></i> Inicio</a>
-      <a href="mi_legajo.php"><i class="fas fa-folder-open"></i> Mi Legajo</a>
-      <a href="admin_documentos.php"><i class="fas fa-file-alt"></i> Ver Documentos</a>
-      <a href="empleados_panel.php"><i class="fas fa-users"></i> Empleados</a>
-      <a href="crear_usuario.php"><i class="fas fa-user-plus"></i> Crear Usuario</a>
-      <a href="panel_jefes.php"><i class="fas fa-building"></i> Documentos Área</a>
-      <a href="editar_perfil.php"><i class="fas fa-user-edit"></i> Editar Perfil</a>
-    </nav>
-    </aside>
-
-    <div class="main">
-        <header class="topbar">
-            <h1><i class="fas fa-folder"></i> Sección: <?= htmlspecialchars($seccion['nombre']) ?></h1>
-        </header>
         
-        <a href="mi_legajo.php" class="btn-back" style="text-decoration: none; color: white; background: #333; padding: 10px; border-radius: 5px; display: inline-block; margin-bottom: 20px;">
-            <i class="fas fa-arrow-left"></i> Volver a Mi Legajo
-        </a>
+        <div class="header-right">
+            <a href="subir_doc_personal_admin.php?seccion_id=<?= $seccion_id ?>" class="btn-primary">
+                <i class="fas fa-cloud-upload-alt"></i> Subir Documento
+            </a>
+        </div>
+    </header>
 
-        <main class="content">
-            <div class="card">
-                <h3><i class="fas fa-file-alt"></i> Documentos en esta sección</h3>
-                <?php if (!empty($documentos)): ?>
-                    <table class="styled-table">
-                        <thead><tr><th>Nombre Original</th><th>Tipo</th><th>Fecha</th><th>Acción</th></tr></thead>
-                        <tbody>
-                        <?php foreach ($documentos as $doc): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($doc['nombre_original']) ?></td>
-                                <td><?= htmlspecialchars($doc['tipo']) ?></td>
-                                <td><?= $doc['fecha_subida'] ?></td>
-                                <td><a class="btn-download" href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank">Ver</a></td>
-                            </tr>
+    <main class="content">
+        
+        <div class="table-container">
+            <?php if (empty($documentos)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Esta carpeta está vacía</h3>
+                    <p>No has subido documentos a esta sección todavía.</p>
+                </div>
+            <?php else: ?>
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Documento</th>
+                            <th>Tipo</th>
+                            <th>Fecha de Subida</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($documentos as $doc): 
+                            // Lógica visual: Detectar extensión para el icono
+                            $archivo = $doc['nombre_guardado'] ?? ''; 
+                            $ext = strtolower(pathinfo($archivo, PATHINFO_EXTENSION));
+                            
+                            $iconClass = 'fa-file file-icon def'; // Icono por defecto
+                            if ($ext === 'pdf') $iconClass = 'fa-file-pdf file-icon pdf';
+                            elseif (in_array($ext, ['jpg','jpeg','png'])) $iconClass = 'fa-file-image file-icon img';
+                            elseif (in_array($ext, ['doc','docx'])) $iconClass = 'fa-file-word file-icon word';
+                        ?>
+                        <tr>
+                            <td>
+                                <div class="file-info">
+                                    <i class="fas <?= $iconClass ?>"></i>
+                                    <div>
+                                        <span class="file-name"><?= htmlspecialchars($doc['nombre_original']) ?></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge" style="background-color: #e9ecef; color: #495057;">
+                                    <?= htmlspecialchars($doc['tipo']) ?>
+                                </span>
+                            </td>
+                            <td>
+                                <i class="far fa-calendar-alt" style="color: #aaa; margin-right: 5px;"></i>
+                                <?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])) ?>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="../uploads/<?= htmlspecialchars($doc['nombre_guardado']) ?>" target="_blank" class="action-btn" title="Ver Documento">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                </td>
+                        </tr>
                         <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <p>No has subido documentos en esta sección aún.</p>
-                <?php endif; ?>
-            </div>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
 
-            <div class="card">
-                <h3><i class="fas fa-upload"></i> Subir Nuevo Documento</h3>
-                <form action="subir_doc_personal_admin.php" method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="seccion_id" value="<?= $seccion_id ?>">
-                    <label for="tipo">Tipo de Documento:</label>
-                    <input type="text" name="tipo" id="tipo" required placeholder="Ej: Certificado de estudios">
-                    <br><br>
-                    <label for="documento">Seleccionar Archivo:</label>
-                    <input type="file" name="documento" id="documento" required>
-                    <br><br>
-                    <button type="submit" style="padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Subir Documento</button>
-                </form>
-            </div>
-        </main>
-    </div>
-</body>
-</html>
+    </main>
+</div>
+
+<?php require_once '../includes/footer.php'; ?>

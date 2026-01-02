@@ -2,7 +2,7 @@
 session_start();
 require '../php/db.php';
 
-// 1. Seguridad y validaciones
+// 1. Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
     die("Acceso denegado.");
 }
@@ -10,39 +10,54 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die("Método no permitido.");
 }
 
+// 2. Recibir Datos
 $nombre = trim($_POST['nombre'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$clave_sin_hash = trim($_POST['clave'] ?? ''); // ¡IMPORTANTE! Necesitamos la clave en texto plano
-$rol = $_POST['rol'] ?? '';
+$email  = trim($_POST['email'] ?? '');
+// OJO: En el formulario HTML el campo se llama 'password', no 'clave'
+$password_texto = trim($_POST['password'] ?? ''); 
+$rol     = $_POST['rol'] ?? 'empleado';
 $id_area = !empty($_POST['id_area']) ? (int)$_POST['id_area'] : null;
 
-// ... (Aquí van tus validaciones de campos vacíos, etc.) ...
+// Validaciones básicas
+if (empty($nombre) || empty($email) || empty($password_texto)) {
+    die("Por favor completa todos los campos obligatorios.");
+}
+
+// 3. Procesar Foto (Reutilizamos lógica de editar perfil simplificada)
+$foto_nombre = null;
+if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+    $ext = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
+    if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+        $nuevo_nombre = "user_" . time() . "_" . uniqid() . "." . $ext;
+        if (move_uploaded_file($_FILES['foto']['tmp_name'], "../uploads/usuarios/" . $nuevo_nombre)) {
+            $foto_nombre = $nuevo_nombre;
+        }
+    }
+}
 
 try {
-    // Verificar si el email ya existe
-    $stmt_check = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
-    $stmt_check->execute([$email]);
-    if ($stmt_check->fetch()) {
-        header("Location: crear_usuario.php?status=error&msg=" . urlencode("El correo ya está registrado."));
-        exit;
+    // Verificar duplicados
+    $stmtCheck = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
+    $stmtCheck->execute([$email]);
+    if ($stmtCheck->fetch()) {
+        die("Error: El correo electrónico ya está registrado.");
     }
 
-    $password_hash = password_hash($clave_sin_hash, PASSWORD_DEFAULT);
+    // Hash de contraseña
+    $password_hash = password_hash($password_texto, PASSWORD_DEFAULT);
 
-    // Insertar el nuevo usuario
-    $stmt_insert = $pdo->prepare(
-        "INSERT INTO usuarios (nombre, email, password_hash, rol, id_area) VALUES (?, ?, ?, ?, ?)"
-    );
-    $stmt_insert->execute([$nombre, $email, $password_hash, $rol, $id_area]);
-    $id_nuevo_usuario = $pdo->lastInsertId();
+    // Insertar
+    $sql = "INSERT INTO usuarios (nombre, email, password_hash, rol, id_area, foto) VALUES (?, ?, ?, ?, ?, ?)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$nombre, $email, $password_hash, $rol, $id_area, $foto_nombre]);
+    
+    $id_nuevo = $pdo->lastInsertId();
 
-    // 2. Redirigir a la página de éxito con los datos necesarios
-    // Pasamos el ID del nuevo usuario y la clave (urlencode para seguridad)
-    header("Location: crear_usuario_exito.php?id=" . $id_nuevo_usuario . "&clave=" . urlencode($clave_sin_hash));
+    // 4. Redirigir a Éxito (Enviamos clave en texto plano SOLO esta vez para el PDF)
+    header("Location: crear_usuario_exito.php?id=" . $id_nuevo . "&pass=" . urlencode($password_texto));
     exit;
 
 } catch (PDOException $e) {
-    header("Location: crear_usuario.php?status=error&msg=" . urlencode("Error en la base de datos."));
-    exit;
+    die("Error en base de datos: " . $e->getMessage());
 }
 ?>
