@@ -7,7 +7,7 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     exit;
 }
 
-$id_doc = $_GET['id'] ?? null;
+$id_doc = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$id_doc) header("Location: documentos_enviados.php");
 
 try {
@@ -27,7 +27,7 @@ try {
     $stmt->execute([$id_doc, $_SESSION['id']]);
     $doc = $stmt->fetch();
 
-    if (!$doc) die("Documento no encontrado.");
+    if (!$doc) die("Documento no encontrado o acceso denegado.");
 
     // 3. Historial
     $stmtHist = $pdo->prepare("
@@ -39,6 +39,10 @@ try {
     ");
     $stmtHist->execute([$id_doc]);
     $historial = $stmtHist->fetchAll();
+
+    // 4. NUEVO: Obtener lista de Áreas para el formulario de corrección
+    $stmtAreas = $pdo->query("SELECT id, nombre FROM areas ORDER BY nombre ASC");
+    $areas = $stmtAreas->fetchAll();
 
 } catch (PDOException $e) {
     die("Error: " . $e->getMessage());
@@ -96,9 +100,7 @@ if ($st_lower === 'observado') $estado_class = 'st-observado';
                 </div>
             </div>
             <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
-            <a href="../php/logout.php" class="topbar-logout-btn" title="Salir" style="margin-left: 15px; color: #dc3545;">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
+            
         </div>
     </header>
 
@@ -128,13 +130,20 @@ if ($st_lower === 'observado') $estado_class = 'st-observado';
 
             <div class="controls-container">
                 <div class="info-card">
-                    <div class="doc-meta-title"><i class="fas fa-info-circle"></i> Metadatos</div>
-                    <div class="meta-row"><span class="meta-label">Nombre:</span> <?= htmlspecialchars($doc['nombre_original']) ?></div>
-                    <div class="meta-row"><span class="meta-label">Carpeta:</span> <?= htmlspecialchars($doc['seccion']) ?></div>
-                    <div class="meta-row"><span class="meta-label">Subido el:</span> <?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])) ?></div>
-                    <?php if (!empty($doc['area_destino'])): ?>
-                        <div class="meta-row"><span class="meta-label">Destino:</span> <strong><?= htmlspecialchars($doc['area_destino']) ?></strong></div>
-                    <?php endif; ?>
+                    <div class="doc-meta-title"><i class="fas fa-info-circle"></i> Información</div>
+                    <div class="meta-row"><span class="meta-label">Archivo:</span> <?= htmlspecialchars($doc['nombre_original']) ?></div>
+                    <div class="meta-row"><span class="meta-label">Enviado:</span> <?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])) ?></div>
+                    
+                    <div class="meta-row">
+                        <span class="meta-label">Destino:</span> 
+                        <?php if (!empty($doc['area_destino'])): ?>
+                            <span class="badge bg-primary" style="background:#e7f1ff; color:#0d6efd; padding:2px 6px; border-radius:4px;">
+                                <?= htmlspecialchars($doc['area_destino']) ?>
+                            </span>
+                        <?php else: ?>
+                            <span style="color:red;">⚠ Sin asignar</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <div class="action-card" style="border-top: 4px solid var(--color-primario);">
@@ -154,11 +163,27 @@ if ($st_lower === 'observado') $estado_class = 'st-observado';
                         
                         <form action="reemplazar_documento.php" method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="id_documento" value="<?= $doc['id'] ?>">
+                            
                             <div class="form-group" style="margin-bottom: 15px;">
-                                <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Subir nueva versión:</label>
-                                <input type="file" name="nuevo_documento" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="width: 100%;">
+                                <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px; color:#555;">Confirmar Área de Destino:</label>
+                                <select name="id_area_destino" class="form-control" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff;">
+                                    <option value="">-- Seleccionar --</option>
+                                    <?php foreach ($areas as $area): ?>
+                                        <option value="<?= $area['id'] ?>" <?= ($area['id'] == $doc['id_area_destino']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($area['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <button type="submit" class="btn-block" style="background: #dc3545; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Enviar Corrección</button>
+
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px; color:#555;">Subir nueva versión:</label>
+                                <input type="file" name="nuevo_documento" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="width: 100%; font-size: 12px;">
+                            </div>
+                            
+                            <button type="submit" class="btn-block" style="background: #dc3545; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                <i class="fas fa-paper-plane"></i> Enviar Corrección
+                            </button>
                         </form>
                     <?php endif; ?>
                 </div>
