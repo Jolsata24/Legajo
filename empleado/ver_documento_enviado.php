@@ -2,17 +2,22 @@
 session_start();
 require '../php/db.php';
 
-// Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     header("Location: ../into/login.html");
     exit;
 }
 
 $id_doc = $_GET['id'] ?? null;
-if (!$id_doc) header("Location: empleado_dashboard.php");
+if (!$id_doc) header("Location: documentos_enviados.php");
 
 try {
-    // 1. Datos del Documento
+    // 1. NOTIFICACIONES
+    $stmt_notif = $pdo->prepare("SELECT id, mensaje, leido, enlace FROM notificaciones WHERE id_usuario_destino = ? ORDER BY fecha_creacion DESC LIMIT 5");
+    $stmt_notif->execute([$_SESSION['id']]);
+    $notificaciones = $stmt_notif->fetchAll();
+    $num_no_leidas = count(array_filter($notificaciones, fn($n) => !$n['leido']));
+
+    // 2. Datos del Documento
     $sql = "SELECT d.*, s.nombre as seccion, a.nombre as area_destino 
             FROM documentos d
             LEFT JOIN secciones_legajo s ON d.id_seccion = s.id
@@ -22,10 +27,9 @@ try {
     $stmt->execute([$id_doc, $_SESSION['id']]);
     $doc = $stmt->fetch();
 
-    if (!$doc) die("Acceso denegado o documento no encontrado.");
+    if (!$doc) die("Documento no encontrado.");
 
-    // 2. TRAZABILIDAD (Historial) - CORREGIDO
-    // Se cambió 'h.fecha_accion' por 'h.fecha'
+    // 3. Historial
     $stmtHist = $pdo->prepare("
         SELECT h.*, u.nombre as actor 
         FROM documentos_historial h
@@ -50,121 +54,133 @@ $ruta_archivo = "../uploads/" . $doc['nombre_guardado'];
 $ext = strtolower(pathinfo($doc['nombre_guardado'], PATHINFO_EXTENSION));
 $st_lower = strtolower($doc['estado']);
 
-// Colores
 $estado_class = 'st-pendiente';
-if ($st_lower === 'aprobado') $estado_class = 'st-validado';
+if (in_array($st_lower, ['aprobado', 'validado'])) $estado_class = 'st-validado';
 if ($st_lower === 'rechazado') $estado_class = 'st-rechazado';
+if ($st_lower === 'observado') $estado_class = 'st-observado';
 ?>
 
 <div class="main">
+    
     <header class="topbar">
         <div style="display: flex; align-items: center; gap: 15px;">
-            <a href="empleado_dashboard.php" class="btn-back-circle"><i class="fas fa-arrow-left"></i></a>
-            <h1>Seguimiento de Documento</h1>
+            <a href="documentos_enviados.php" class="btn-back-circle" title="Volver"><i class="fas fa-arrow-left"></i></a>
+            <h1>Detalle del Documento</h1>
+        </div>
+
+        <div class="top-actions">
+            
+            <div class="notifications">
+                <a href="#" id="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <?php if ($num_no_leidas > 0): ?>
+                        <span class="notification-count"><?= $num_no_leidas ?></span>
+                    <?php endif; ?>
+                </a>
+                <div class="notification-dropdown" id="notification-dropdown-list">
+                    <div class="dropdown-header">Notificaciones</div>
+                    <div class="dropdown-body">
+                        <?php if (empty($notificaciones)): ?>
+                            <div style="padding:15px; text-align:center; color:#777;">Sin novedades</div>
+                        <?php else: ?>
+                            <?php foreach($notificaciones as $n): ?>
+                                <a href="../php/marcar_leido.php?id=<?= $n['id'] ?>" style="<?= $n['leido']?'':'background:#f0f8ff; border-left:3px solid #0d6efd;' ?>">
+                                    <p style="margin:0; font-size:13px;"><?= htmlspecialchars($n['mensaje']) ?></p>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <div class="dropdown-footer">
+                        <a href="notificaciones.php">Ver todas</a>
+                    </div>
+                </div>
+            </div>
+            <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+            <a href="../php/logout.php" class="topbar-logout-btn" title="Salir" style="margin-left: 15px; color: #dc3545;">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
         </div>
     </header>
 
     <main class="content">
-        
-        <?php if(isset($_GET['msg']) && $_GET['msg']=='reemplazado'): ?>
-            <div style="background:#d1e7dd; color:#0f5132; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <i class="fas fa-check-circle"></i> ¡Corrección enviada correctamente! El documento está pendiente de revisión.
+        <?php if(isset($_GET['msg']) && $_GET['msg'] === 'reemplazado'): ?>
+            <div style="background:#d1e7dd; color:#0f5132; padding:15px; border-radius:8px; margin-bottom:20px; border: 1px solid #badbcc;">
+                <i class="fas fa-check-circle"></i> <strong>¡Enviado!</strong> El documento ha sido corregido y enviado a revisión nuevamente.
             </div>
         <?php endif; ?>
 
         <div class="doc-viewer-layout">
-            
             <div class="viewer-container">
                 <?php if ($ext === 'pdf'): ?>
                     <iframe src="<?= $ruta_archivo ?>" class="viewer-iframe"></iframe>
                 <?php elseif (in_array($ext, ['jpg', 'jpeg', 'png'])): ?>
-                    <img src="<?= $ruta_archivo ?>" class="viewer-img">
+                    <div style="text-align:center; padding: 20px;">
+                        <img src="<?= $ruta_archivo ?>" class="viewer-img" style="max-width: 100%; border-radius: 8px;">
+                    </div>
                 <?php else: ?>
                     <div class="no-preview">
-                        <i class="fas fa-file-alt"></i>
+                        <i class="fas fa-file-download" style="font-size: 50px; color: #ccc; margin-bottom: 20px;"></i>
                         <p>Vista previa no disponible.</p>
-                        <a href="<?= $ruta_archivo ?>" class="btn-primary">Descargar</a>
+                        <a href="<?= $ruta_archivo ?>" class="btn-primary" download>Descargar</a>
                     </div>
                 <?php endif; ?>
             </div>
 
             <div class="controls-container">
-                
                 <div class="info-card">
-                    <div class="doc-meta-title">Datos</div>
-                    <div class="meta-row"><span class="meta-label">Archivo:</span> <?= htmlspecialchars($doc['nombre_original']) ?></div>
+                    <div class="doc-meta-title"><i class="fas fa-info-circle"></i> Metadatos</div>
+                    <div class="meta-row"><span class="meta-label">Nombre:</span> <?= htmlspecialchars($doc['nombre_original']) ?></div>
                     <div class="meta-row"><span class="meta-label">Carpeta:</span> <?= htmlspecialchars($doc['seccion']) ?></div>
-                    
+                    <div class="meta-row"><span class="meta-label">Subido el:</span> <?= date("d/m/Y H:i", strtotime($doc['fecha_subida'])) ?></div>
                     <?php if (!empty($doc['area_destino'])): ?>
-                    <div class="meta-row"><span class="meta-label">Destino:</span> <strong><?= htmlspecialchars($doc['area_destino']) ?></strong></div>
+                        <div class="meta-row"><span class="meta-label">Destino:</span> <strong><?= htmlspecialchars($doc['area_destino']) ?></strong></div>
                     <?php endif; ?>
                 </div>
 
-                <div class="action-card" style="border-top-color: var(--color-primario);">
-                    <div class="doc-meta-title">Estado Actual</div>
-                    
-                    <div class="status-current <?= $estado_class ?>">
-                        <?= ucfirst($doc['estado']) ?>
-                    </div>
+                <div class="action-card" style="border-top: 4px solid var(--color-primario);">
+                    <div class="doc-meta-title">Estado</div>
+                    <div class="status-current <?= $estado_class ?>"><?= ucfirst($doc['estado']) ?></div>
 
                     <?php if (!empty($doc['feedback'])): ?>
-                        <div style="background: #fff3cd; color: #664d03; padding: 15px; border-radius: 8px; font-size: 14px; border-left: 4px solid #ffc107;">
-                            <strong><i class="fas fa-comment"></i> Motivo / Observación:</strong><br>
+                        <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 6px; font-size: 13px; margin-top: 15px; border-left: 4px solid #ffc107;">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Observación:</strong><br>
                             <?= nl2br(htmlspecialchars($doc['feedback'])) ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if ($st_lower === 'rechazado' || $st_lower === 'observado'): ?>
                         <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+                        <h4 style="font-size: 15px; margin-bottom: 15px; color: #dc3545;"><i class="fas fa-sync-alt"></i> Corregir Documento</h4>
                         
-                        <h4 style="font-size: 14px; margin-bottom: 10px; color: #333;">
-                            <i class="fas fa-sync-alt"></i> Subir Corrección
-                        </h4>
-                        
-                        <form action="reemplazar_doc.php" method="POST" enctype="multipart/form-data">
+                        <form action="reemplazar_documento.php" method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="id_documento" value="<?= $doc['id'] ?>">
-                            
-                            <div class="form-group">
-                                <label style="font-size: 12px; color: #666;">Selecciona el archivo corregido:</label>
-                                <input type="file" name="nuevo_documento" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.png">
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Subir nueva versión:</label>
+                                <input type="file" name="nuevo_documento" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="width: 100%;">
                             </div>
-
-                            <button type="submit" class="btn-block" style="background: var(--color-primario); color: white;">
-                                Reemplazar y Enviar
-                            </button>
+                            <button type="submit" class="btn-block" style="background: #dc3545; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Enviar Corrección</button>
                         </form>
                     <?php endif; ?>
                 </div>
 
                 <div class="info-card" style="margin-top: 20px;">
-                    <div class="doc-meta-title"><i class="fas fa-history"></i> Historial de Acciones</div>
-                    
-                    <div style="max-height: 200px; overflow-y: auto;">
-                        <?php if(empty($historial)): ?>
-                            <p style="font-size: 12px; color: #999;">Sin historial registrado.</p>
-                        <?php else: ?>
-                            <ul style="list-style: none; padding: 0; margin: 0;">
-                                <?php foreach($historial as $h): ?>
-                                    <li style="border-bottom: 1px solid #f0f0f0; padding: 10px 0;">
-                                        <small style="display: block; color: #999; font-size: 11px;">
-                                            <?= date("d/m/Y H:i", strtotime($h['fecha'])) ?>
-                                        </small>
-                                        <div style="font-size: 13px; font-weight: 500; color: #333;">
-                                            <?= htmlspecialchars($h['accion']) ?>
-                                        </div>
-                                        <div style="font-size: 12px; color: #666;">
-                                            <?= htmlspecialchars($h['descripcion']) ?>
-                                        </div>
-                                        <small style="color: var(--color-primario);">
-                                            Por: <?= htmlspecialchars($h['actor']) ?>
-                                        </small>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        <?php endif; ?>
+                    <div class="doc-meta-title"><i class="fas fa-history"></i> Trazabilidad</div>
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        <ul style="list-style: none; padding: 0;">
+                            <?php foreach($historial as $h): ?>
+                                <li style="border-left: 2px solid #e0e0e0; padding-left: 15px; margin-bottom: 15px; position: relative;">
+                                    <div style="position: absolute; left: -5px; top: 0; width: 8px; height: 8px; background: #bbb; border-radius: 50%;"></div>
+                                    <div style="font-size: 11px; color: #888;"><?= date("d/m/Y H:i", strtotime($h['fecha'])) ?></div>
+                                    <div style="font-size: 13px; font-weight: 600;"><?= htmlspecialchars($h['accion']) ?></div>
+                                    <?php if(!empty($h['descripcion'])): ?>
+                                        <div style="font-size: 12px; color: #555;"><?= htmlspecialchars($h['descripcion']) ?></div>
+                                    <?php endif; ?>
+                                    <div style="font-size: 11px; color: var(--color-primario);"><i class="fas fa-user"></i> <?= htmlspecialchars($h['actor'] ?? 'Sistema') ?></div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     </div>
                 </div>
-
             </div>
         </div>
     </main>

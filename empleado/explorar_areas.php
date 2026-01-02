@@ -2,68 +2,79 @@
 session_start();
 require '../php/db.php';
 
+// 1. Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     header("Location: ../into/login.html");
     exit;
 }
 
 try {
-    // Obtener todas las áreas que tienen al menos un documento
-    $areas = $pdo->query(
-    "SELECT DISTINCT a.id, a.nombre 
-     FROM areas a
-     JOIN documentos d ON a.id = d.id_area_destino
-     WHERE d.estado = 'revisado'  -- ¡CONDICIÓN AÑADIDA!
-     ORDER BY a.nombre ASC"
-)->fetchAll();
+    // 2. Lógica: Obtener áreas que tengan documentos públicos ('revisado')
+    // Agregamos un conteo para mostrar cuántos docs hay en cada área
+    $sql = "
+        SELECT a.id, a.nombre, COUNT(d.id) as total_docs
+        FROM areas a
+        JOIN documentos d ON a.id = d.id_area_destino
+        WHERE d.estado = 'revisado'
+        GROUP BY a.id
+        ORDER BY a.nombre ASC
+    ";
+    $areas = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    // Manejar error
+    die("Error de conexión: " . $e->getMessage());
 }
 
-$page_title = "Explorar Documentos por Área";
+$page_title = "Explorar Áreas";
+// RECICLAJE: Usamos el mismo estilo de grilla que en Mi Legajo
+$extra_css = "../style/mi_legajo.css";
+
 require_once '../includes/header_empleado.php';
 require_once '../includes/sidebar_empleado.php';
 ?>
-<style>
-    .card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-    .area-card {
-        background: #fff; border-radius: 12px; padding: 20px; text-align: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;
-        text-decoration: none; color: #333;
-    }
-    .area-card:hover { transform: translateY(-5px); box-shadow: 0 6px 14px rgba(0,0,0,0.1); }
-    .area-card .icon { font-size: 40px; color: #007bff; margin-bottom: 15px; }
-    .area-card h3 { margin: 0; font-size: 18px; }
-</style>
 
 <div class="main">
     <header class="topbar">
-      <h1><i class="fas fa-sitemap"></i> Explorador de Documentos Públicos</h1>
+        <h1><i class="fas fa-network-wired"></i> Documentos Públicos por Área</h1>
+        <div class="top-actions">
+            <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
+        </div>
     </header>
 
     <main class="content">
-        <div class="card">
-            <p style="text-align: left;">Selecciona un área para ver los documentos que han sido asignados públicamente a ella.</p>
-
-            <div class="card-grid">
-                <?php if (empty($areas)): ?>
-                    <p>Aún no hay documentos disponibles en ninguna área.</p>
-                <?php else: ?>
-                    <?php foreach ($areas as $area): ?>
-                        <a href="ver_area_documentos.php?id=<?= $area['id'] ?>" class="area-card">
-                            <div class="icon"><i class="fas fa-folder-open"></i></div>
-                            <h3><?= htmlspecialchars($area['nombre']) ?></h3>
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+        
+        <div style="margin-bottom: 25px; color: #666; font-size: 14px; padding-left: 5px;">
+            <p><i class="fas fa-info-circle"></i> Estas son las áreas que han compartido documentos de acceso público para los empleados.</p>
         </div>
+
+        <div class="sections-grid">
+            <?php if (empty($areas)): ?>
+                <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-folder-minus" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i>
+                    <p>No hay documentos públicos disponibles en este momento.</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($areas as $area): 
+                    $texto_conteo = ($area['total_docs'] == 1) ? "1 documento disponible" : $area['total_docs'] . " documentos disponibles";
+                ?>
+                    <a href="ver_area_documentos.php?id=<?= $area['id'] ?>" class="section-card">
+                        <div class="section-icon" style="background: rgba(13,202,240,0.1);">
+                            <i class="fas fa-building" style="color: #0dcaf0;"></i>
+                        </div>
+                        
+                        <div class="section-info">
+                            <h3><?= htmlspecialchars($area['nombre']) ?></h3>
+                            <p><?= $texto_conteo ?></p>
+                        </div>
+                        
+                        <div class="section-arrow">
+                            <i class="fas fa-external-link-alt"></i>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
     </main>
 </div>
 
