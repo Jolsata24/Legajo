@@ -2,27 +2,32 @@
 session_start();
 require '../php/db.php';
 
-// 1. Seguridad: Verificar Rol Secretaria
+// 1. Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'secretaria') {
     header("Location: ../into/login.html");
     exit;
 }
 
-$id_usuario = $_SESSION['id'];
-
 try {
-    // --- CONSULTAS DASHBOARD ---
+    // --- CONSULTAS DASHBOARD FILTRADAS ---
+    // NOTA: Agregamos "AND id_area_destino > 0" para contar solo trámites de áreas, no legajos personales.
+
+    // 1. Totales (Solo trámites de área)
+    $total_docs = $pdo->query("SELECT COUNT(*) FROM documentos WHERE id_area_destino IS NOT NULL AND id_area_destino > 0")->fetchColumn();
     
-    // 1. Totales Generales (O ajusta a "WHERE id_area = ..." si solo ve su área)
-    $total_docs = $pdo->query("SELECT COUNT(*) FROM documentos")->fetchColumn();
-    $total_pendientes = $pdo->query("SELECT COUNT(*) FROM documentos WHERE estado = 'pendiente'")->fetchColumn();
+    // 2. Pendientes (Solo trámites de área)
+    $total_pendientes = $pdo->query("SELECT COUNT(*) FROM documentos WHERE estado = 'pendiente' AND id_area_destino IS NOT NULL AND id_area_destino > 0")->fetchColumn();
+    
+    // 3. Empleados (Total general)
     $total_empleados = $pdo->query("SELECT COUNT(*) FROM usuarios WHERE rol = 'empleado'")->fetchColumn();
     
-    // 2. Documentos Recientes (Globales o de área)
+    // 4. Documentos Recientes (Solo trámites de área)
     $stmtRecent = $pdo->prepare("
-        SELECT d.nombre_original, d.fecha_subida, d.estado, u.nombre as autor 
+        SELECT d.nombre_original, d.fecha_subida, d.estado, u.nombre as autor, a.nombre as area_destino
         FROM documentos d
         JOIN usuarios u ON d.id_usuario = u.id
+        LEFT JOIN areas a ON d.id_area_destino = a.id
+        WHERE d.id_area_destino IS NOT NULL AND d.id_area_destino > 0
         ORDER BY d.fecha_subida DESC LIMIT 5
     ");
     $stmtRecent->execute();
@@ -33,10 +38,8 @@ try {
 }
 
 $page_title = "Panel de Secretaria";
-// ¡AQUÍ ESTÁ LA MAGIA! RECICLAMOS EL ESTILO DEL ADMIN
 $extra_css = "../style/admin_dashboard.css"; 
 
-// Usamos header_secretaria si tienes uno específico, o el general adaptado
 require_once '../includes/header_secretaria.php'; 
 require_once '../includes/sidebar_secretaria.php';
 ?>
@@ -57,11 +60,11 @@ require_once '../includes/sidebar_secretaria.php';
         
         <div class="cards">
             <div class="card">
-                <h3>Documentos Totales</h3>
+                <h3>Trámites Recibidos</h3>
                 <p><?= $total_docs ?></p>
             </div>
             <div class="card">
-                <h3>Pendientes de Revisión</h3>
+                <h3>Pendientes de Atención</h3>
                 <p><?= $total_pendientes ?></p>
             </div>
             <div class="card">
@@ -69,22 +72,23 @@ require_once '../includes/sidebar_secretaria.php';
                 <p><?= $total_empleados ?></p>
             </div>
             <a href="subir_doc_personal.php" class="card" style="text-decoration: none; border-left-color: var(--color-exito);">
-                <h3 style="color: var(--color-exito);"><i class="fas fa-plus-circle"></i> Nueva Subida</h3>
-                <p style="font-size: 16px; margin-top: 5px; color: #666;">Subir documento al sistema</p>
+                <h3 style="color: var(--color-exito);"><i class="fas fa-plus-circle"></i> Subida Rápida</h3>
+                <p style="font-size: 16px; margin-top: 5px; color: #666;">Archivar documento</p>
             </a>
         </div>
 
         <div class="card-container">
-            <h3><i class="fas fa-clock"></i> Últimos Documentos Recibidos</h3>
+            <h3><i class="fas fa-clock"></i> Últimos Trámites Recibidos</h3>
             
             <?php if(empty($docs_recientes)): ?>
-                <p style="color: #888; text-align: center; padding: 20px;">No hay documentos recientes.</p>
+                <p style="color: #888; text-align: center; padding: 20px;">No hay trámites recientes.</p>
             <?php else: ?>
                 <table class="activity-list" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="text-align: left; border-bottom: 2px solid #eee;">
                             <th style="padding: 10px; font-size: 12px; color: #666;">Documento</th>
-                            <th style="padding: 10px; font-size: 12px; color: #666;">Subido Por</th>
+                            <th style="padding: 10px; font-size: 12px; color: #666;">Enviado Por</th>
+                            <th style="padding: 10px; font-size: 12px; color: #666;">Destino</th>
                             <th style="padding: 10px; font-size: 12px; color: #666;">Fecha</th>
                             <th style="padding: 10px; font-size: 12px; color: #666;">Estado</th>
                         </tr>
@@ -99,6 +103,9 @@ require_once '../includes/sidebar_secretaria.php';
                                 <?= htmlspecialchars($doc['nombre_original']) ?>
                             </td>
                             <td style="padding: 12px 10px;"><?= htmlspecialchars($doc['autor']) ?></td>
+                            <td style="padding: 12px 10px; color: #666;">
+                                <i class="fas fa-building" style="font-size: 10px;"></i> <?= htmlspecialchars($doc['area_destino'] ?? 'General') ?>
+                            </td>
                             <td style="padding: 12px 10px; font-size: 13px;"><?= date("d/m H:i", strtotime($doc['fecha_subida'])) ?></td>
                             <td style="padding: 12px 10px;">
                                 <span style="font-size: 11px; padding: 3px 8px; border-radius: 10px; background: <?= $estadoColor ?>20; color: <?= $estadoColor ?>; font-weight: 600;">

@@ -9,21 +9,19 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'secretaria') {
 }
 
 try {
-    // 2. Consulta Avanzada
-    // Traemos documentos, datos del autor y el nombre de la sección/carpeta
-    // También traemos el nombre del área destino si fue derivado
+    // 2. Consulta FILTRADA (Solo Trámites de Área)
+    // El filtro WHERE d.id_area_destino > 0 asegura que NO se muestren archivos de legajo personal
     $sql = "
         SELECT 
             d.id, d.nombre_original, d.nombre_guardado, d.tipo, d.fecha_subida, d.estado, d.id_area_destino,
             u.nombre as usuario_nombre, 
             u.rol as usuario_rol, 
             u.foto as usuario_foto,
-            s.nombre as seccion_nombre,
             a.nombre as area_destino_nombre
         FROM documentos d
         JOIN usuarios u ON d.id_usuario = u.id
-        LEFT JOIN secciones_legajo s ON d.id_seccion = s.id
         LEFT JOIN areas a ON d.id_area_destino = a.id
+        WHERE d.id_area_destino IS NOT NULL AND d.id_area_destino > 0
         ORDER BY d.fecha_subida DESC
     ";
     $stmt = $pdo->query($sql);
@@ -33,8 +31,7 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
-$page_title = "Repositorio General - Secretaria";
-// Usamos el mismo estilo que la tabla de documentos del admin
+$page_title = "Bandeja de Entrada - Secretaria";
 $extra_css = "../style/admin_documentos.css";
 
 require_once '../includes/header_secretaria.php';
@@ -44,7 +41,7 @@ require_once '../includes/sidebar_secretaria.php';
 <div class="main">
     
     <header class="topbar">
-        <h1><i class="fas fa-archive"></i> Gestión Documental</h1>
+        <h1><i class="fas fa-inbox"></i> Bandeja de Trámites y Solicitudes</h1>
         <div class="top-actions">
             <span><i class="fas fa-calendar-alt"></i> <?= date("d/m/Y") ?></span>
         </div>
@@ -72,45 +69,37 @@ require_once '../includes/sidebar_secretaria.php';
         <div class="table-container">
             <?php if (empty($documentos)): ?>
                 <div style="padding: 50px; text-align: center; color: #6c757d;">
-                    <i class="fas fa-file-invoice" style="font-size: 48px; opacity: 0.5; margin-bottom: 15px;"></i>
-                    <p>No se encontraron documentos en el sistema.</p>
+                    <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.5; margin-bottom: 15px;"></i>
+                    <p>No hay trámites pendientes en la bandeja de entrada.</p>
                 </div>
             <?php else: ?>
                 <table class="admin-table" id="docsTable">
                     <thead>
                         <tr>
-                            <th>Usuario</th>
+                            <th>Remitente</th>
                             <th>Documento</th>
-                            <th>Ubicación / Destino</th>
+                            <th>Destino (Área)</th>
                             <th>Fecha</th>
                             <th>Estado</th>
-                            <th style="text-align: right;">Gestión</th>
+                            <th style="text-align: right;">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($documentos as $doc): 
-                            // 1. Icono según extensión
                             $ext = strtolower(pathinfo($doc['nombre_guardado'], PATHINFO_EXTENSION));
                             $iconClass = 'fa-file icon-def';
                             if ($ext === 'pdf') $iconClass = 'fa-file-pdf icon-pdf';
                             elseif (in_array($ext, ['doc','docx'])) $iconClass = 'fa-file-word icon-word';
                             elseif (in_array($ext, ['jpg','png','jpeg'])) $iconClass = 'fa-file-image icon-img';
 
-                            // 2. Clase de color para el estado
                             $estado = strtolower($doc['estado'] ?? 'pendiente');
-                            $badgeClass = 'status-pendiente'; // Por defecto amarillo
-                            if ($estado === 'validado' || $estado === 'aprobado') $badgeClass = 'status-validado'; // Verde
-                            elseif ($estado === 'rechazado') $badgeClass = 'status-rechazado'; // Rojo
-                            // Si tienes 'observado' en CSS, úsalo, si no el pendiente sirve o crea uno naranja
+                            $badgeClass = 'status-pendiente'; 
+                            if ($estado === 'validado' || $estado === 'aprobado') $badgeClass = 'status-validado'; 
+                            elseif ($estado === 'rechazado') $badgeClass = 'status-rechazado';
+                            elseif ($estado === 'observado') $badgeClass = 'status-observado';
 
-                            // 3. Foto de perfil
                             $fotoUser = !empty($doc['usuario_foto']) ? "../uploads/usuarios/".$doc['usuario_foto'] : "../img/user.png";
-                            
-                            // 4. Ubicación (Sección o Área derivada)
-                            $ubicacion = htmlspecialchars($doc['seccion_nombre'] ?? 'General');
-                            if (!empty($doc['area_destino_nombre'])) {
-                                $ubicacion .= ' <i class="fas fa-arrow-right" style="font-size:10px; color:#999;"></i> ' . htmlspecialchars($doc['area_destino_nombre']);
-                            }
+                            $areaDestino = htmlspecialchars($doc['area_destino_nombre'] ?? 'Sin asignar');
                         ?>
                         <tr class="doc-row" data-estado="<?= $estado ?>">
                             <td>
@@ -127,14 +116,15 @@ require_once '../includes/sidebar_secretaria.php';
                                 <div class="doc-cell">
                                     <i class="fas <?= $iconClass ?>"></i>
                                     <span class="doc-name" title="<?= htmlspecialchars($doc['nombre_original']) ?>">
-                                        <?= htmlspecialchars(substr($doc['nombre_original'], 0, 30)) ?><?= strlen($doc['nombre_original']) > 30 ? '...' : '' ?>
+                                        <?= htmlspecialchars(substr($doc['nombre_original'], 0, 35)) ?>
                                     </span>
                                 </div>
                             </td>
 
                             <td>
-                                <span style="font-size: 13px; color: #555;">
-                                    <?= $ubicacion ?>
+                                <span style="font-size: 13px; font-weight: 500; color: #444;">
+                                    <i class="fas fa-building" style="color:#adb5bd; margin-right:5px;"></i>
+                                    <?= $areaDestino ?>
                                 </span>
                             </td>
 
@@ -145,8 +135,8 @@ require_once '../includes/sidebar_secretaria.php';
                             </td>
 
                             <td style="text-align: right;">
-                                <a href="ver_documento.php?id=<?= $doc['id'] ?>" class="btn-icon" title="Revisar y Cambiar Estado" style="color: var(--color-primario); background: rgba(13, 110, 253, 0.1);">
-                                    <i class="fas fa-edit"></i>
+                                <a href="ver_documento.php?id=<?= $doc['id'] ?>" class="btn-icon" title="Revisar Documento" style="color: var(--color-primario); background: rgba(13, 110, 253, 0.1);">
+                                    <i class="fas fa-eye"></i> Revisar
                                 </a>
                             </td>
                         </tr>
@@ -172,15 +162,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const textContent = row.innerText.toLowerCase();
             const rowStatus = row.getAttribute('data-estado');
             
-            // Lógica de filtrado
             const matchesSearch = textContent.includes(searchTerm);
-            const matchesStatus = statusTerm === '' || rowStatus === statusTerm; // Coincidencia exacta de estado
+            const matchesStatus = statusTerm === '' || rowStatus === statusTerm;
 
-            if (matchesSearch && matchesStatus) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
         });
     }
 

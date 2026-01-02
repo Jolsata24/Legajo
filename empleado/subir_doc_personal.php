@@ -7,16 +7,19 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
     exit;
 }
 
-// Obtener ÁREAS
+// CAMBIO CLAVE: Capturar la sección preseleccionada de la URL
+$id_preseleccionado = isset($_GET['id_seccion']) ? (int)$_GET['id_seccion'] : 0;
+
+// Obtener SECCIONES
 try {
-    $stmt = $pdo->prepare("SELECT id, nombre FROM areas ORDER BY nombre ASC");
+    $stmt = $pdo->prepare("SELECT id, nombre FROM secciones_legajo ORDER BY nombre ASC");
     $stmt->execute();
-    $areas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $secciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Error al cargar áreas: " . $e->getMessage());
+    die("Error al cargar secciones: " . $e->getMessage());
 }
 
-$page_title = "Enviar Documento";
+$page_title = "Subir a Mi Legajo";
 $extra_css = "../style/subir_documento.css";
 
 require_once '../includes/header_empleado.php';
@@ -25,9 +28,11 @@ require_once '../includes/sidebar_empleado.php';
 
 <div class="main">
     <header class="topbar">
-        <h1><i class="fas fa-paper-plane"></i> Enviar Trámite / Documento</h1>
+        <h1><i class="fas fa-folder-plus"></i> Archivar en Mi Legajo</h1>
         <div class="top-actions">
-            <a href="documentos_enviados.php" class="btn-back" style="color: #6c757d; text-decoration: none;">
+            <?php $link_volver = ($id_preseleccionado > 0) ? "seccion_legajo.php?id=$id_preseleccionado" : "mi_legajo.php"; ?>
+            
+            <a href="<?= $link_volver ?>" class="btn-back" style="color: #6c757d; text-decoration: none;">
                 <i class="fas fa-times"></i> Cancelar
             </a>
         </div>
@@ -42,16 +47,19 @@ require_once '../includes/sidebar_empleado.php';
         <?php endif; ?>
 
         <div class="card-upload-container">
-            <form action="enviar_documento.php" method="POST" enctype="multipart/form-data" id="uploadForm">
+            <form action="guardar_doc_personal.php" method="POST" enctype="multipart/form-data">
                 
                 <div class="form-section">
-                    <label class="section-label"><i class="fas fa-building"></i> ¿A qué área va dirigido?</label>
+                    <label class="section-label"><i class="fas fa-folder-open"></i> Selecciona la Carpeta</label>
                     <div class="custom-select-wrapper">
-                        <select name="id_area" required class="form-control-lg">
-                            <option value="">-- Selecciona el Área de Destino --</option>
-                            <?php foreach ($areas as $area): ?>
-                                <option value="<?= $area['id'] ?>">
-                                    <?= htmlspecialchars($area['nombre']) ?>
+                        <select name="id_seccion" required class="form-control-lg">
+                            <option value="">-- Elige una carpeta --</option>
+                            <?php foreach ($secciones as $sec): 
+                                // CAMBIO CLAVE: Lógica de selección automática
+                                $selected = ($sec['id'] == $id_preseleccionado) ? 'selected' : '';
+                            ?>
+                                <option value="<?= $sec['id'] ?>" <?= $selected ?>>
+                                    <?= htmlspecialchars($sec['nombre']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -59,28 +67,26 @@ require_once '../includes/sidebar_empleado.php';
                 </div>
 
                 <div class="form-section">
-                    <label class="section-label"><i class="fas fa-file-import"></i> Archivo a enviar</label>
+                    <label class="section-label"><i class="fas fa-file-import"></i> Archivo</label>
                     
                     <div class="drop-zone" id="dropZone">
                         <div class="drop-zone-content">
                             <i class="fas fa-cloud-upload-alt drop-icon"></i>
-                            <span class="drop-text">Arrastra y suelta tu archivo aquí</span>
-                            <span class="drop-subtext">o haz clic para explorar</span>
-                            <input type="file" name="archivo" id="fileInput" class="drop-input" required accept=".pdf,.doc,.docx,.jpg,.png">
+                            <span class="drop-text">Arrastra tu archivo aquí</span>
+                            <span class="drop-subtext">Formatos: PDF, Word, JPG, PNG</span>
+                            <input type="file" name="archivo" id="fileInput" class="drop-input" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                         </div>
-                        
                         <div class="file-preview" id="filePreview" style="display: none;">
                             <i class="fas fa-file-alt"></i>
                             <span id="fileName">archivo.pdf</span>
                             <i class="fas fa-check-circle success-icon"></i>
                         </div>
                     </div>
-                    <p class="help-text">Formatos: PDF, Word, JPG. Máx: 10MB.</p>
                 </div>
 
                 <div class="form-actions">
                     <button type="submit" class="btn-primary-lg">
-                        <i class="fas fa-paper-plane"></i> Enviar a Revisión
+                        <i class="fas fa-save"></i> Guardar en Legajo
                     </button>
                 </div>
 
@@ -96,17 +102,13 @@ require_once '../includes/sidebar_empleado.php';
     .section-label { display: block; font-weight: 600; margin-bottom: 10px; color: #333; font-size: 15px; }
     .form-control-lg { width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 8px; font-size: 14px; background-color: #f8f9fa; cursor: pointer; }
     
-    /* Drag Zone Mejorada */
     .drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; background: #fafafa; }
     .drop-zone:hover, .drop-zone.dragover { border-color: var(--color-primario); background: #f0f7ff; }
-    
-    /* IMPORTANTE: z-index: 10 asegura que el input esté ENCIMA del texto y reciba el clic */
     .drop-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
     
     .drop-icon { font-size: 40px; color: #aaa; margin-bottom: 10px; }
     .file-preview { margin-top: 10px; padding: 10px; background: #e0f2fe; border-radius: 8px; color: #0284c7; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .btn-primary-lg { width: 100%; padding: 14px; background: var(--color-primario); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
-    .help-text { font-size: 12px; color: #888; text-align: center; margin-top: 5px; }
 </style>
 
 <script>
@@ -116,18 +118,13 @@ require_once '../includes/sidebar_empleado.php';
     const filePreview = document.getElementById('filePreview');
     const fileNameSpan = document.getElementById('fileName');
 
-    // 1. Prevenir comportamientos por defecto para permitir el Drop
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, preventDefaults, false);
         document.body.addEventListener(eventName, preventDefaults, false);
     });
 
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
+    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
 
-    // 2. Efectos visuales al arrastrar
     ['dragenter', 'dragover'].forEach(eventName => {
         dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
     });
@@ -136,21 +133,14 @@ require_once '../includes/sidebar_empleado.php';
         dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
     });
 
-    // 3. Manejar el evento DROP (Soltar archivo)
     dropZone.addEventListener('drop', handleDrop, false);
 
     function handleDrop(e) {
         const dt = e.dataTransfer;
-        const files = dt.files;
-        
-        // Asignar los archivos soltados al input real
-        fileInput.files = files;
-        
-        // Mostrar vista previa
+        fileInput.files = dt.files;
         updatePreview();
     }
 
-    // 4. Manejar el evento CHANGE (Clic normal)
     fileInput.addEventListener('change', updatePreview);
 
     function updatePreview() {
