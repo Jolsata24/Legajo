@@ -1,7 +1,10 @@
 <?php
 session_start();
-require '../php/db.php';
 
+// 1. Incluimos funciones.php (que a su vez incluye db.php y la conexión $pdo)
+require_once '../php/funciones.php'; 
+
+// Verificar sesión
 if (!isset($_SESSION['id'])) {
     header("Location: ../into/login.html");
     exit;
@@ -9,41 +12,60 @@ if (!isset($_SESSION['id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_usuario = $_SESSION['id'];
-    $id_area_destino = intval($_POST['id_area_destino']);
+    // Validamos que venga el área, si no, asignamos 0 o manejamos error
+    $id_area_destino = isset($_POST['id_area_destino']) ? intval($_POST['id_area_destino']) : 0;
 
+    // Verificar si se subió el archivo sin errores
     if (!isset($_FILES['documento']) || $_FILES['documento']['error'] != 0) {
-        die("Error al subir el archivo");
+        die("Error al subir el archivo. Código: " . ($_FILES['documento']['error'] ?? 'Desconocido'));
     }
 
     $nombre_original = $_FILES['documento']['name'];
-    // Generar nombre único para evitar conflictos
+    $tipo = $_FILES['documento']['type'];
+    
+    // Generar nombre único para evitar conflictos en la carpeta
     $nombre_guardado = uniqid() . "_" . basename($nombre_original);
     $ruta_destino = "../uploads/" . $nombre_guardado;
 
+    // Intentar mover el archivo a la carpeta uploads
     if (move_uploaded_file($_FILES['documento']['tmp_name'], $ruta_destino)) {
-        $tipo = $_FILES['documento']['type'];
+        
+        try {
+            // 2. Usamos PDO para insertar (Compatible con tu db.php)
+            $sql = "INSERT INTO documentos (id_usuario, id_area_destino, nombre_original, nombre_guardado, tipo, estado, fecha_subida) 
+                    VALUES (?, ?, ?, ?, ?, 'Pendiente', NOW())";
+            
+            $stmt = $pdo->prepare($sql);
+            
+            // Ejecutamos la consulta
+            if ($stmt->execute([$id_usuario, $id_area_destino, $nombre_original, $nombre_guardado, $tipo])) {
+                
+                // --- 3. AUDITORÍA: REGISTRAR LA SUBIDA ---
+                registrar_auditoria(
+                    $pdo, 
+                    $id_usuario, 
+                    'SUBIDA_DOCUMENTO', 
+                    "Archivo: " . $nombre_original . " (Guardado como: " . $nombre_guardado . ")"
+                );
+                // ----------------------------------------
 
-        // CORRECCIÓN: Se agrega 'estado' como 'Pendiente' y 'fecha_subida' explícitamente
-        $sql = "INSERT INTO documentos (id_usuario, id_area_destino, nombre_original, nombre_guardado, tipo, estado, fecha_subida) VALUES (?, ?, ?, ?, ?, 'Pendiente', NOW())";
-        
-        $stmt = $conn->prepare($sql);
-        // "iisss" se convierte en "iissss" por el parámetro extra del tipo de archivo (si 'estado' va hardcoded en la query no cuenta como parametro bind)
-        // Revisamos los bind_param: 
-        // 1. id_usuario (i)
-        // 2. id_area_destino (i)
-        // 3. nombre_original (s)
-        // 4. nombre_guardado (s)
-        // 5. tipo (s)
-        $stmt->bind_param("iisss", $id_usuario, $id_area_destino, $nombre_original, $nombre_guardado, $tipo);
-        
-        if ($stmt->execute()) {
-            echo "Documento enviado correctamente. Estado inicial: Pendiente.";
-            echo "<br><a href='../into/dashboard_empleado.php'>Volver al inicio</a>";
-        } else {
-            echo "Error en la base de datos: " . $stmt->error;
+                // Mensaje de éxito y botón de volver
+                echo "<div style='font-family: Arial, sans-serif; padding: 20px; text-align: center;'>";
+                echo "<h3 style='color: #198754;'>¡Documento enviado correctamente!</h3>";
+                echo "<p>El estado inicial es: <strong>Pendiente</strong></p>";
+                echo "<br><a href='empleado_dashboard.php' style='padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px;'>Volver al Panel</a>";
+                echo "</div>";
+
+            } else {
+                echo "Error al guardar la información en la base de datos.";
+            }
+
+        } catch (PDOException $e) {
+            die("Error de Base de Datos: " . $e->getMessage());
         }
+
     } else {
-        echo "Error al mover el archivo a la carpeta uploads.";
+        echo "Error al mover el archivo a la carpeta uploads. Verifica los permisos de la carpeta.";
     }
 }
 ?>

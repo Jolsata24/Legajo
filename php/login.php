@@ -1,6 +1,7 @@
 <?php
 session_start();
-require 'db.php';
+require 'db.php'; 
+require_once 'funciones.php'; // --- CORRECCIÓN 1: Importante para que funcione el log ---
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['usuario'] ?? '');
@@ -11,25 +12,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // --- CORRECCIÓN AQUÍ: Añadimos la columna 'foto' a la consulta ---
         $stmt = $pdo->prepare("SELECT id, nombre, email, password_hash, rol, id_area, foto 
                                FROM usuarios 
                                WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // Verificamos contraseña PRIMERO
         if ($user && password_verify($clave, $user['password_hash'])) {
-            // Guardar todos los datos en la sesión
+            
+            // --- CORRECCIÓN 2: El log se guarda SOLO si la contraseña es correcta ---
+            registrar_auditoria($pdo, $user['id'], 'LOGIN_EXITOSO', 'Ingreso al sistema');
+
+            // Guardar datos en sesión
             $_SESSION['id']       = $user['id'];
             $_SESSION['nombre']   = $user['nombre'];
             $_SESSION['email']    = $user['email'];
             $_SESSION['rol']      = $user['rol'];
             $_SESSION['id_area']  = $user['id_area'];
+            $_SESSION['foto']     = $user['foto']; 
 
-            // --- CORRECCIÓN AQUÍ: Guardamos el nombre del archivo de la foto ---
-            $_SESSION['foto']  = $user['foto']; // Esto ahora sí tendrá un valor
-
-            // Redirigir según el rol (tu código existente)
+            // Redirigir según el rol
             switch ($user['rol']) {
                 case 'admin':
                     header("Location: ../admin/admin_dashboard.php");
@@ -46,17 +49,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 case 'empleado':
                     header("Location: ../empleado/empleado_dashboard.php");
                     break;
-                case 'sistemas': // NUEVO CASO
+                case 'sistemas': 
                     header("Location: ../sistemas/dashboard_auditoria.php");
                     break;
                 default:
-                    echo "Rol desconocido.";
+                    echo "Rol desconocido o inactivo.";
             }
             exit;
         } else {
+            // (Opcional) Aquí podrías registrar un 'LOGIN_FALLIDO' si quisieras mayor seguridad
+            // registrar_auditoria($pdo, null, 'LOGIN_FALLIDO', 'Intento con email: '.$email);
+            
             echo "Usuario o contraseña incorrectos.";
         }
     } catch (PDOException $e) {
         echo "Error en la base de datos: " . $e->getMessage();
     }
 }
+?>

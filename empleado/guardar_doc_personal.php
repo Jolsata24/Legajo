@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../php/db.php';
+require_once '../php/funciones.php'; // <--- IMPORTANTE: Incluir funciones
 
 // 1. Seguridad
 if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
@@ -11,7 +12,7 @@ if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'empleado') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $id_usuario = $_SESSION['id'];
-    $id_seccion = $_POST['id_seccion'] ?? null; // Recibimos la SECCIÓN
+    $id_seccion = $_POST['id_seccion'] ?? null; 
     $archivo    = $_FILES['archivo'] ?? null;
 
     if ($id_seccion && $archivo && $archivo['error'] === UPLOAD_ERR_OK) {
@@ -22,17 +23,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (in_array($ext, $tipos_permitidos)) {
             
-            // Renombrar único
             $nombre_guardado = time() . "_" . $id_usuario . "_" . uniqid() . "." . $ext;
             $ruta_destino = "../uploads/" . $nombre_guardado;
             
-            // Crear carpeta si no existe
             if (!is_dir("../uploads/")) mkdir("../uploads/", 0777, true);
 
             if (move_uploaded_file($archivo['tmp_name'], $ruta_destino)) {
                 
                 try {
-                    // CAMBIO CLAVE: Insertamos id_seccion (y id_area_destino queda NULL o 0)
                     $sql = "INSERT INTO documentos 
                             (id_usuario, id_seccion, nombre_original, nombre_guardado, tipo, fecha_subida, estado) 
                             VALUES (?, ?, ?, ?, ?, NOW(), 'Pendiente')";
@@ -41,7 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     if ($stmt->execute([$id_usuario, $id_seccion, $nombre_original, $nombre_guardado, $ext])) {
                         
-                        // Redirigir a la carpeta del legajo donde se guardó
+                        // --- AUDITORÍA AQUÍ ---
+                        registrar_auditoria(
+                            $pdo, 
+                            $id_usuario, 
+                            'SUBIDA_LEGAJO', 
+                            "Subió: " . $nombre_original . " a sección ID: " . $id_seccion
+                        );
+                        // ----------------------
+
                         header("Location: seccion_legajo.php?id=$id_seccion&msg=exito_personal");
                         exit;
 
@@ -64,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Faltan datos o hubo un error en la subida.";
     }
 
-    // Si hubo error, volver al formulario
     header("Location: subir_doc_personal.php?error=" . urlencode($error));
     exit;
 }
