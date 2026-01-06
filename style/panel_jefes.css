@@ -1,4 +1,4 @@
-/* style/panel_jefes.css */
+/* style/panel_jefes.css - CORREGIDO DREMH */
 
 /* --- Grilla de Áreas --- */
 .areas-grid {
@@ -18,20 +18,21 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  text-decoration: none; /* Porque toda la tarjeta puede ser un enlace */
+  text-decoration: none;
   box-shadow: var(--sombra-tarjeta);
 }
 
 .area-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 15px 30px rgba(211, 47, 47, 0.15); /* Sombra rojiza */
   border-color: var(--color-primario);
 }
 
 /* Decoración Superior (Barra de color) */
 .area-header-bar {
   height: 6px;
-  background: linear-gradient(90deg, var(--color-primario), var(--color-info));
+  /* CAMBIO: Degradado Rojo -> Naranja (Identidad DREMH) */
+  background: linear-gradient(90deg, var(--color-primario), var(--color-secundario));
   width: 100%;
 }
 
@@ -51,7 +52,8 @@
 .area-icon {
   width: 50px;
   height: 50px;
-  background-color: rgba(13, 110, 253, 0.08);
+  /* CAMBIO: Fondo rojo muy pálido para armonizar con el icono */
+  background-color: rgba(211, 47, 47, 0.08);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -79,7 +81,7 @@
   color: var(--color-texto-secundario);
   margin: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* Limita a 2 líneas */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -88,7 +90,7 @@
 .area-stats {
   display: flex;
   gap: 10px;
-  margin-top: auto; /* Empuja hacia abajo */
+  margin-top: auto;
   padding-top: 15px;
   border-top: 1px solid #f0f0f0;
 }
@@ -106,8 +108,18 @@
 }
 
 .stat-pill i { font-size: 14px; }
-.stat-pill.users { color: var(--color-info); background-color: rgba(13, 202, 240, 0.1); }
-.stat-pill.docs { color: var(--color-primario); background-color: rgba(13, 110, 253, 0.1); }
+
+/* CAMBIO: Píldora de Usuarios (Ahora Naranja en vez de Cian) */
+.stat-pill.users { 
+  color: #ef6c00; 
+  background-color: rgba(239, 108, 0, 0.1); 
+}
+
+/* CAMBIO: Píldora de Documentos (Ahora Rojo en vez de Azul) */
+.stat-pill.docs { 
+  color: var(--color-primario); 
+  background-color: rgba(211, 47, 47, 0.1); 
+}
 
 /* Flecha de acción */
 .action-arrow {

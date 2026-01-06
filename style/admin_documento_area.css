@@ -1,8 +1,8 @@
-/* style/admin_documento_area.css */
+/* style/admin_documento_area.css - CORREGIDO DREMH */
 
 /* --- Cabecera del Área (Hero) --- */
 .area-hero {
-  background: #fff;
+  background: var(--color-fondo-tarjeta); /* Usar variable */
   border-radius: 12px;
   border: 1px solid var(--color-borde);
   box-shadow: var(--sombra-tarjeta);
@@ -23,13 +23,15 @@
   top: 0;
   bottom: 0;
   width: 6px;
-  background: linear-gradient(180deg, var(--color-primario), var(--color-info));
+  /* CAMBIO: Eliminado el azul (color-info). Ahora es Rojo -> Naranja */
+  background: linear-gradient(180deg, var(--color-primario), #f57c00);
 }
 
 .area-icon-large {
   width: 64px;
   height: 64px;
-  background-color: rgba(13, 110, 253, 0.1);
+  /* CAMBIO: Fondo azul -> Fondo rojo muy pálido */
+  background-color: rgba(211, 47, 47, 0.1);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -60,10 +62,7 @@
   overflow: hidden;
 }
 
-.doc-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+.doc-table { width: 100%; border-collapse: collapse; }
 
 .doc-table thead {
   background-color: #f8f9fa;
@@ -87,38 +86,17 @@
   font-size: 14px;
 }
 
-.doc-table tr:hover { background-color: #fcfcfc; }
+.doc-table tr:hover { background-color: #fff5f5; /* Tono rojizo muy suave al pasar el mouse */ }
 .doc-table tr:last-child td { border-bottom: none; }
 
 /* Celda de Usuario (Foto + Nombre) */
-.user-info-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.user-info-cell img {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid #dee2e6;
-}
-.user-name-text {
-  font-weight: 500;
-  font-size: 13px;
-}
-.user-role-text {
-  font-size: 11px;
-  color: #888;
-  display: block;
-}
+.user-info-cell { display: flex; align-items: center; gap: 10px; }
+.user-info-cell img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #dee2e6; }
+.user-name-text { font-weight: 500; font-size: 13px; }
+.user-role-text { font-size: 11px; color: #888; display: block; }
 
 /* Celda Documento */
-.doc-info-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.doc-info-cell { display: flex; align-items: center; gap: 10px; }
 .doc-title { font-weight: 500; }
 
 /* Badges de Estado */
@@ -134,7 +112,7 @@
 .status-pendiente { background: #fff3cd; color: #664d03; }
 .status-rechazado { background: #f8d7da; color: #842029; }
 
-/* Botones Acción */
+/* Botones Acción (El ojito) */
 .btn-action {
   width: 32px;
   height: 32px;
@@ -146,7 +124,13 @@
   transition: all 0.2s;
   text-decoration: none;
 }
-.btn-action:hover { background: #e9ecef; color: var(--color-primario); }
+
+/* CAMBIO: Al pasar el mouse se pone rojo corporativo */
+.btn-action:hover { 
+    background: var(--color-primario); 
+    color: #fff; 
+    box-shadow: 0 4px 8px rgba(211, 47, 47, 0.2);
+}
 
 /* Responsive */
 @media (max-width: 768px) {

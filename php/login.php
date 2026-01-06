@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'db.php'; 
+require 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['usuario'] ?? '');
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['email']    = $user['email'];
             $_SESSION['rol']      = $user['rol'];
             $_SESSION['id_area']  = $user['id_area'];
-            
+
             // --- CORRECCIÓN AQUÍ: Guardamos el nombre del archivo de la foto ---
             $_SESSION['foto']  = $user['foto']; // Esto ahora sí tendrá un valor
 
@@ -46,6 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 case 'empleado':
                     header("Location: ../empleado/empleado_dashboard.php");
                     break;
+                case 'sistemas': // NUEVO CASO
+                    header("Location: ../sistemas/dashboard_auditoria.php");
+                    break;
                 default:
                     echo "Rol desconocido.";
             }
@@ -57,4 +60,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "Error en la base de datos: " . $e->getMessage();
     }
 }
-?>

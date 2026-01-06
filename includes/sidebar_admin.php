@@ -1,5 +1,5 @@
 <?php
-$foto_path = '../img/user2.png';
+$foto_path = '../img/user.png';
 if (!empty($_SESSION['foto'])) {
     $ruta_foto_usuario = '../uploads/usuarios/' . $_SESSION['foto'];
     if (file_exists($ruta_foto_usuario)) {

@@ -1,41 +1,95 @@
-/* style/ver_seccion_empleado.css */
+/* style/ver_seccion_empleado.css - CORREGIDO DREMH */
 
 /* Cabecera Específica */
 .visor-header {
-  background: #fff;
+  background: var(--color-fondo-tarjeta);
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--color-borde);
   margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 5px solid #6610f2; /* Marca visual de Visor */
+  box-shadow: var(--sombra-tarjeta);
+  /* CAMBIO: Morado -> Rojo DREMH (Borde izquierdo decorativo) */
+  border-left: 5px solid var(--color-primario); 
 }
-.visor-title h2 { margin: 0; font-size: 20px; color: #212529; }
-.visor-title span { color: #6c757d; font-size: 14px; }
-.visor-title strong { color: #6610f2; }
+
+.visor-title h2 { 
+  margin: 0; 
+  font-size: 20px; 
+  color: var(--color-texto-principal); 
+  font-weight: 700;
+}
+
+.visor-title span { 
+  color: var(--color-texto-secundario); 
+  font-size: 14px; 
+}
+
+.visor-title strong { 
+  /* CAMBIO: Morado -> Rojo para resaltar el nombre del empleado */
+  color: var(--color-primario); 
+}
+
+/* Botón "Volver" (Estilo secundario limpio) */
+.btn-secondary {
+    padding: 8px 16px;
+    background-color: #fff;
+    border: 1px solid var(--color-borde);
+    color: var(--color-texto-secundario);
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+}
+.btn-secondary:hover {
+    background-color: #f8f9fa;
+    color: var(--color-texto-principal);
+    border-color: #adb5bd;
+}
 
 /* Tabla (Reutilizamos estilos limpios) */
 .table-responsive {
-  background: #fff;
+  background: var(--color-fondo-tarjeta);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--sombra-tarjeta);
   overflow: hidden;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--color-borde);
 }
+
 .doc-table { width: 100%; border-collapse: collapse; }
-.doc-table th { background: #f8f9fa; padding: 15px; text-align: left; font-size: 12px; text-transform: uppercase; color: #6c757d; }
-.doc-table td { padding: 15px; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
-.doc-table tr:hover { background-color: #fdfdfd; }
+
+.doc-table th { 
+  background: #f8f9fa; 
+  padding: 15px; 
+  text-align: left; 
+  font-size: 12px; 
+  text-transform: uppercase; 
+  color: var(--color-texto-secundario);
+  border-bottom: 2px solid var(--color-borde);
+  font-weight: 600;
+}
+
+.doc-table td { 
+  padding: 15px; 
+  border-bottom: 1px solid var(--color-borde); 
+  vertical-align: middle; 
+  color: var(--color-texto-principal);
+}
+
+.doc-table tr:hover { background-color: #fff5f5; /* Un tono rojizo muy muy suave al pasar el mouse, opcional */ }
 
 /* Iconos y Badges */
 .file-icon { font-size: 20px; margin-right: 10px; }
+
+/* Estados (Se mantienen estándares universales) */
 .badge { padding: 5px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
 .badge.validado { background: #d1e7dd; color: #0f5132; }
 .badge.pendiente { background: #fff3cd; color: #664d03; }
 .badge.rechazado { background: #f8d7da; color: #842029; }
 
+/* Botón "Ver" (Pequeño) */
 .btn-download-sm {
   padding: 6px 12px;
   background: #e9ecef;
@@ -47,5 +101,12 @@
   align-items: center;
   gap: 5px;
   transition: all 0.2s;
+  font-weight: 500;
 }
-.btn-download-sm:hover { background: #6610f2; color: #fff; }
+
+/* CAMBIO: Hover ahora se vuelve Rojo DREMH en lugar de morado */
+.btn-download-sm:hover { 
+  background: var(--color-primario); 
+  color: #fff; 
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.2); /* Pequeña sombra roja */
+}

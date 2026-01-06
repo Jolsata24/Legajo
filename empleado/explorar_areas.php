@@ -59,8 +59,8 @@ require_once '../includes/sidebar_empleado.php';
                     $clase_vacia = ($count == 0) ? "opacity: 0.7;" : ""; // Un poco transparente si está vacía
                 ?>
                     <a href="ver_area_documentos.php?id=<?= $area['id'] ?>" class="section-card" style="<?= $clase_vacia ?>">
-                        <div class="section-icon" style="background: rgba(13,202,240,0.1);">
-                            <i class="fas fa-building" style="color: #0dcaf0;"></i>
+                        <div class="section-icon" style="background: rgba(240, 100, 13, 0.1);">
+                            <i class="fas fa-building" style="color: #f00d0dff;"></i>
                         </div>
                         
                         <div class="section-info">

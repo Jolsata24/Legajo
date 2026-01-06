@@ -2,7 +2,7 @@
 // --- LÓGICA MEJORADA PARA LA FOTO ---
 
 // 1. Ruta por defecto
-$foto_a_mostrar = '../img/user2.png'; 
+$foto_a_mostrar = '../img/user.png'; 
 
 // 2. Comprobar si hay una foto en la sesión
 if (!empty($_SESSION['foto'])) {

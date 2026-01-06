@@ -50,32 +50,40 @@
 }
 
 /* --- 3. Tarjeta de Empleado --- */
+/* --- TARJETA DE EMPLEADO --- */
 .employee-card {
   background: var(--color-fondo-tarjeta);
-  border-radius: 16px;
-  border: 1px solid var(--color-borde);
-  padding: 0; /* Quitamos padding contenedor para manejarlo dentro */
+  border-radius: 12px;
   box-shadow: var(--sombra-tarjeta);
+  border: 1px solid var(--color-borde);
+  overflow: hidden;
   transition: all 0.3s ease;
+  position: relative;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  position: relative;
 }
 
 .employee-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-  border-color: #b6d4fe;
+  box-shadow: 0 12px 24px rgba(211, 47, 47, 0.15); /* Sombra rojiza */
+  border-color: var(--color-primario);
 }
 
 /* Cabecera de Color (Fondo detrás de la foto) */
 .card-banner {
-  height: 80px;
-  background: linear-gradient(135deg, var(--color-primario), var(--color-info));
+  height: 90px;
+  /* Degradado DREMH: Rojo a Naranja */
+  background: linear-gradient(135deg, #d32f2f, #f57c00);
   position: relative;
 }
 
+.card-banner::after{
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.1);
+  clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+}
 /* Menú de 3 puntos (Opcional para futuras acciones rápidas) */
 .card-options {
   position: absolute;
@@ -83,6 +91,21 @@
   right: 15px;
   color: rgba(255,255,255,0.8);
   cursor: pointer;
+}
+
+.card-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid #fff; /* Borde blanco limpio */
+  object-fit: cover;
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f8f9fa;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 2;
 }
 
 /* Contenido Principal */
@@ -94,7 +117,36 @@
   flex-direction: column;
   align-items: center;
 }
+.card-body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-texto-principal);
+  margin-bottom: 4px;
+}
 
+.card-body .role {
+  font-size: 13px;
+  color: #d32f2f; /* Texto rojo para el cargo */
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(211, 47, 47, 0.05); /* Fondo rojo muy suave */
+  padding: 4px 8px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.card-body .info-item {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 /* Foto de Perfil */
 .avatar-container {
   margin-top: -40px; /* Sube la foto sobre el banner */
@@ -160,11 +212,12 @@
 /* Pie de Tarjeta (Botones) */
 .card-footer {
   padding: 15px 20px;
-  background-color: #fcfcfc;
+  background-color: #fff;
   border-top: 1px solid var(--color-borde);
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
-  justify-content: center;
 }
 
 .btn-icon-action {
@@ -191,7 +244,41 @@
   background: var(--color-peligro);
   border-color: var(--color-peligro);
 }
+.btn-card {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+/* Botón VER: Estilo "Fantasma" Rojo */
+.btn-view {
+  background-color: #fff;
+  border: 1px solid #d32f2f;
+  color: #d32f2f;
+}
+.btn-view:hover {
+  background-color: #d32f2f;
+  color: #fff;
+}
 
+/* Botón ACCIÓN/EDITAR: Naranja suave */
+.btn-action {
+  background-color: #fff3e0; /* Naranja muy claro */
+  color: #ef6c00;
+  border: 1px solid transparent;
+}
+.btn-action:hover {
+  background-color: #ef6c00;
+  color: #fff;
+}
 /* Empty State */
 .no-results {
   grid-column: 1 / -1;

@@ -39,7 +39,7 @@ require_once '../includes/header_empleado.php';
 require_once '../includes/sidebar_empleado.php';
 ?>
 
-<link rel="stylesheet" href="../style/admin_dashboard.css">
+<link rel="stylesheet" href="../style/mi_legajo.css">
 
 <div class="main">
     
@@ -62,7 +62,7 @@ require_once '../includes/sidebar_empleado.php';
                             <div style="padding:15px; text-align:center; color:#777;">Sin novedades</div>
                         <?php else: ?>
                             <?php foreach($notificaciones as $n): ?>
-                                <a href="../php/marcar_leido.php?id=<?= $n['id'] ?>" style="<?= $n['leido']?'':'background:#f0f8ff; border-left:3px solid #0d6efd;' ?>">
+                                <a href="../php/marcar_leido.php?id=<?= $n['id'] ?>" style="<?= $n['leido']?'':'background:#f0f8ff; border-left:3px solid #fd490dff;' ?>">
                                     <p style="margin:0; font-size:13px;"><?= htmlspecialchars($n['mensaje']) ?></p>
                                 </a>
                             <?php endforeach; ?>
@@ -96,7 +96,7 @@ require_once '../includes/sidebar_empleado.php';
         <div class="sections-grid" style="margin-top: 20px;">
             <?php foreach ($secciones as $sec): 
                 $icon = ($sec['cantidad_docs'] > 0) ? "fa-folder-open" : "fa-folder";
-                $color = ($sec['cantidad_docs'] > 0) ? "#0d6efd" : "#adb5bd"; 
+                $color = ($sec['cantidad_docs'] > 0) ? "#adb5bd" : "#adb5bd"; 
             ?>
             <a href="seccion_legajo.php?id=<?= $sec['id'] ?>" class="section-card">
                 <div class="section-icon"><i class="fas <?= $icon ?>" style="color: <?= $color ?>;"></i></div>

@@ -2,15 +2,28 @@
 
 /* --- 1. Variables (Colores) --- */
 :root {
-  --color-primario: #0d6efd;
-  --color-primario-hover: #0b5ed7;
-  --color-secundario: #6c757d;
-  --color-exito: #198754;
-  --color-peligro: #dc3545;
-  --color-advertencia: #ffc107;
-  --color-info: #0dcaf0;
+  /* CAMBIO PRINCIPAL: Azul (#0d6efd) -> Rojo DREMH (#d32f2f) */
+  /* Este color se usará en botones principales, enlaces activos del sidebar, etc. */
+  --color-primario: #d32f2f; 
+  
+  /* Color más oscuro para efectos hover (al pasar el mouse) */
+  --color-primario-hover: #b71c1c; 
+
+  /* CAMBIO SECUNDARIO: Ajustado a Naranja DREMH o Gris oscuro */
+  --color-secundario: #f57c00; /* Naranja institucional para elementos secundarios */
+  
+  /* Colores de estado */
+  --color-exito: #198754;      /* Verde (se mantiene estándar para éxitos) */
+  --color-peligro: #dc3545;    /* Rojo alerta */
+  
+  /* CAMBIO ADVERTENCIA: Amarillo genérico -> Amarillo DREMH (#fbc02d) */
+  --color-advertencia: #fbc02d; 
+  
+  --color-info: #0dcaf0;       /* Cian (se puede mantener o cambiar a naranja si prefieres) */
+
+  /* Colores de fondo y texto (Se mantienen para buena legibilidad) */
   --color-fondo-cuerpo: #f8f9fa;
-  --color-fondo-sidebar: #212529;
+  --color-fondo-sidebar: #212529; /* Fondo oscuro elegante para el menú */
   --color-texto-sidebar: #f8f9fa;
   --color-fondo-tarjeta: #ffffff;
   --color-texto-principal: #212529;
@@ -22,7 +35,6 @@
 /* --- 2. Reset Básico --- */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 body { display: flex; background: var(--color-fondo-cuerpo); color: var(--color-texto-principal); min-height: 100vh; }
-
 /* --- 3. Layout Principal --- */
 .main { flex: 1; padding: 24px; margin-left: 280px; transition: margin-left 0.3s ease; }
 
@@ -36,7 +48,11 @@ body { display: flex; background: var(--color-fondo-cuerpo); color: var(--color-
 .sidebar .menu { display: flex; flex-direction: column; width: 100%; }
 .sidebar .menu a { text-decoration: none; color: var(--color-texto-sidebar); padding: 14px 18px; margin: 4px 0; border-radius: 8px; transition: background-color 0.2s ease; font-size: 15px; display: flex; align-items: center; gap: 12px; }
 .sidebar .menu a i { font-size: 16px; width: 20px; text-align: center; }
-.sidebar .menu a.active, .sidebar .menu a:hover { background: var(--color-primario); color: #fff; font-weight: 500; }
+.sidebar .menu a.active, .sidebar .menu a:hover { 
+    background: var(--color-primario); /* Ahora será #d32f2f */
+    color: #fff; 
+    font-weight: 500; 
+}
 .sidebar .menu a.logout-btn { margin-top: 20px; background: var(--color-peligro); color: #fff; }
 .sidebar .menu a.logout-btn:hover { background: #b02a37; }
 
