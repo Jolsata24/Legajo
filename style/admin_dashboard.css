@@ -1,104 +1,164 @@
-/* style/admin_documentos.css - CORREGIDO */
+/* style/admin_dashboard.css - CORREGIDO DREMH */
 
-/* --- 1. Barra de Filtros y Control --- */
-.control-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  gap: 20px;
-  flex-wrap: wrap;
+/* --- Layout Principal --- */
+.main {
+    padding: 20px;
+    gap: 20px;
+    display: flex;
+    flex-direction: column;
 }
 
-.search-wrapper {
-  flex: 1;
-  max-width: 400px;
-  position: relative;
+/* --- Tarjetas de Resumen (Cards) --- */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
 }
 
-.search-wrapper input {
-  width: 100%;
-  padding: 12px 15px 12px 45px;
-  border-radius: 8px;
-  border: 1px solid var(--color-borde);
-  background-color: #fff;
-  font-size: 14px;
-  transition: all 0.2s;
+.card {
+    background: var(--color-fondo-tarjeta);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--sombra-tarjeta);
+    border: 1px solid var(--color-borde);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
 }
 
-.search-wrapper input:focus {
-  outline: none;
-  border-color: var(--color-primario);
-  /* CORRECCIÓN: Brillo rojo suave en lugar de azul */
-  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15); 
+/* Efecto Hover estilo DREMH */
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(211, 47, 47, 0.15);
+    border-color: var(--color-primario);
 }
 
-.search-wrapper i {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-secundario);
+/* Barra decorativa superior en cada tarjeta */
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primario), var(--color-secundario));
 }
 
-.filter-group { display: flex; gap: 10px; }
-
-.form-select {
-  padding: 10px 30px 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--color-borde);
-  background-color: #fff;
-  font-size: 14px;
-  color: var(--color-texto-principal);
-  cursor: pointer;
+.card h3 {
+    font-size: 14px;
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 10px;
 }
 
-/* --- 2. Tabla de Documentos Global --- */
-.table-container {
-  background: var(--color-fondo-tarjeta);
-  border-radius: 12px;
-  box-shadow: var(--sombra-tarjeta);
-  border: 1px solid var(--color-borde);
-  overflow: hidden;
+.card p {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-texto-principal);
+    margin: 0;
 }
 
-.admin-table { width: 100%; border-collapse: collapse; }
-.admin-table thead { background-color: #f8f9fa; border-bottom: 2px solid var(--color-borde); }
-.admin-table th { padding: 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--color-texto-secundario); text-transform: uppercase; }
-.admin-table td { padding: 16px; border-bottom: 1px solid var(--color-borde); vertical-align: middle; font-size: 14px; }
-.admin-table tr:hover { background-color: #fcfcfc; }
-.admin-table tr:last-child td { border-bottom: none; }
+/* Icono decorativo de fondo en la tarjeta */
+.card i {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    font-size: 40px;
+    color: rgba(0, 0, 0, 0.05); /* Muy sutil */
+    transition: color 0.3s;
+}
 
-/* Columna de Usuario */
-.user-cell { display: flex; align-items: center; gap: 12px; }
-.user-cell img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #e9ecef; }
-.user-info-mini h4 { font-size: 14px; margin: 0; font-weight: 600; color: var(--color-texto-principal); }
-.user-info-mini span { font-size: 11px; color: var(--color-texto-secundario); display: block; }
+.card:hover i {
+    color: rgba(211, 47, 47, 0.1); /* Se pone rojizo al pasar el mouse */
+}
 
-/* Columna de Documento */
-.doc-cell { display: flex; align-items: center; gap: 10px; }
-.doc-cell i { font-size: 20px; }
-.doc-name { font-weight: 500; color: var(--color-texto-principal); }
+/* --- Contenedores de Gráficos y Actividad --- */
+.card-container {
+    background: var(--color-fondo-tarjeta);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--sombra-tarjeta);
+    border: 1px solid var(--color-borde);
+    margin-bottom: 24px;
+}
 
-/* Iconos de archivo - NOTA: Se dejan los colores estándar (Word azul, PDF rojo) para facilitar reconocimiento */
-.icon-pdf { color: #dc3545; }
-.icon-word { color: #0d6efd; }
-.icon-img { color: #198754; }
-.icon-def { color: #6c757d; }
+.card-container h3 {
+    font-size: 18px;
+    color: var(--color-texto-principal);
+    margin-bottom: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-/* Estados */
-.status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; display: inline-block; }
-.status-validado { background: #d1e7dd; color: #0f5132; }
-.status-pendiente { background: #fff3cd; color: #664d03; }
-.status-rechazado { background: #f8d7da; color: #842029; }
+.card-container h3 i {
+    color: var(--color-primario);
+}
 
-/* Acciones */
-.btn-icon { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--color-secundario); transition: all 0.2s; text-decoration: none; }
-.btn-icon:hover { background: #f1f3f5; color: var(--color-primario); }
-.btn-icon.delete:hover { background: #fee2e2; color: var(--color-peligro); }
+/* --- Botones de Acción Rápida --- */
+.btn-quick-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--color-primario);
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    margin-right: 15px;
+    margin-bottom: 10px;
+}
 
-@media (max-width: 992px) {
-  .table-container { overflow-x: auto; }
-  .control-bar { flex-direction: column; align-items: stretch; }
-  .search-wrapper { max-width: 100%; }
+.btn-quick-action:hover {
+    background: var(--color-primario-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+}
+
+/* --- Lista de Actividad Reciente --- */
+.activity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-list li {
+    padding: 15px 0;
+    border-bottom: 1px solid var(--color-borde);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.activity-list li:last-child {
+    border-bottom: none;
+}
+
+.activity-list li p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-texto-principal);
+    font-weight: 500;
+}
+
+.activity-list li small {
+    color: var(--color-texto-secundario);
+    font-size: 12px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
 }
